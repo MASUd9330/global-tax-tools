@@ -234,6 +234,187 @@ async function main() {
   });
 
   // ============================================================
+  // US STATES — top 25 by population (Phase 1.5)
+  // ============================================================
+  console.log("  Additional states: OH, GA, NC, MI, NJ, VA, WA, AZ, MA, IN, MD, MO, WI, CO, MN, SC, AL, LA, TN, AK, NV, SD, WY");
+
+  // Compact data: [code, slug, name, taxType, hasTax, stdDeduction, topRate, brackets[], sourceUrl, description]
+  type StateSpec = {
+    code: string; slug: string; name: string; taxType: string;
+    hasIncomeTax: boolean; stdDeduction: number; topRate: number | null;
+    brackets: Array<[number, number | null, number]>;
+    sourceUrl: string; description: string;
+  };
+
+  const moreStates: StateSpec[] = [
+    // Ohio — progressive 0/2.75/3.5
+    { code: "OH", slug: "ohio", name: "Ohio", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.035,
+      brackets: [[0, 26050, 0], [26050, 100000, 0.0275], [100000, null, 0.035]],
+      sourceUrl: "https://tax.ohio.gov/",
+      description: "Ohio personal income tax. 3-bracket progressive (2025): 0% / 2.75% / 3.5%." },
+
+    // Georgia — flat 5.39%
+    { code: "GA", slug: "georgia", name: "Georgia", taxType: "flat", hasIncomeTax: true, stdDeduction: 5400, topRate: 0.0539,
+      brackets: [[0, null, 0.0539]],
+      sourceUrl: "https://dor.georgia.gov/",
+      description: "Georgia personal income tax. Flat 5.39% (2025). Standard deduction $5,400 single." },
+
+    // North Carolina — flat 4.5%
+    { code: "NC", slug: "north-carolina", name: "North Carolina", taxType: "flat", hasIncomeTax: true, stdDeduction: 12750, topRate: 0.045,
+      brackets: [[0, null, 0.045]],
+      sourceUrl: "https://www.ncdor.gov/",
+      description: "North Carolina personal income tax. Flat 4.5% (2025). Standard deduction $12,750 single." },
+
+    // Michigan — flat 4.25%
+    { code: "MI", slug: "michigan", name: "Michigan", taxType: "flat", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0425,
+      brackets: [[0, null, 0.0425]],
+      sourceUrl: "https://www.michigan.gov/treasury/",
+      description: "Michigan personal income tax. Flat 4.25% (2025)." },
+
+    // New Jersey — progressive 1.4-10.75
+    { code: "NJ", slug: "new-jersey", name: "New Jersey", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.1075,
+      brackets: [[0, 20000, 0.014], [20000, 35000, 0.0175], [35000, 40000, 0.035], [40000, 75000, 0.05525], [75000, 500000, 0.0637], [500000, 1000000, 0.0897], [1000000, null, 0.1075]],
+      sourceUrl: "https://www.nj.gov/treasury/taxation/",
+      description: "New Jersey personal income tax. 7-bracket progressive (2025), top rate 10.75% on income over $1M." },
+
+    // Virginia — progressive 2/3/5.25/5.75
+    { code: "VA", slug: "virginia", name: "Virginia", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0575,
+      brackets: [[0, 3000, 0.02], [3000, 5000, 0.03], [5000, 17000, 0.05], [17000, null, 0.0575]],
+      sourceUrl: "https://www.tax.virginia.gov/",
+      description: "Virginia personal income tax. 4-bracket progressive (2025), top 5.75%." },
+
+    // Washington — capital gains 7% above $262K (no wage tax)
+    { code: "WA", slug: "washington", name: "Washington", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: 0.07,
+      brackets: [],
+      sourceUrl: "https://dor.wa.gov/",
+      description: "Washington has no state wage income tax. Capital gains tax 7% applies to long-term gains over $262,000 (2025)." },
+
+    // Arizona — flat 2.5%
+    { code: "AZ", slug: "arizona", name: "Arizona", taxType: "flat", hasIncomeTax: true, stdDeduction: 0, topRate: 0.025,
+      brackets: [[0, null, 0.025]],
+      sourceUrl: "https://azdor.gov/",
+      description: "Arizona personal income tax. Flat 2.5% (2025)." },
+
+    // Massachusetts — flat 5% + 4% millionaire surtax over $1M
+    { code: "MA", slug: "massachusetts", name: "Massachusetts", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.09,
+      brackets: [[0, null, 0.05]],
+      sourceUrl: "https://www.mass.gov/orgs/department-of-revenue",
+      description: "Massachusetts personal income tax. Flat 5% base + 4% surtax on income over $1,083,150 (≈ 9% effective at top)." },
+
+    // Indiana — flat 3.05%
+    { code: "IN", slug: "indiana", name: "Indiana", taxType: "flat", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0305,
+      brackets: [[0, null, 0.0305]],
+      sourceUrl: "https://www.in.gov/dor/",
+      description: "Indiana personal income tax. Flat 3.05% (2025)." },
+
+    // Maryland — progressive 2-5.75%
+    { code: "MD", slug: "maryland", name: "Maryland", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0575,
+      brackets: [[0, 1000, 0.02], [1000, 2000, 0.03], [2000, 3000, 0.04], [3000, 100000, 0.0475], [100000, 125000, 0.05], [125000, 150000, 0.0525], [150000, 250000, 0.055], [250000, null, 0.0575]],
+      sourceUrl: "https://www.marylandtaxes.gov/",
+      description: "Maryland personal income tax. 8-bracket progressive (2025), top 5.75%. Local county tax not modeled." },
+
+    // Missouri — progressive 2-4.95%
+    { code: "MO", slug: "missouri", name: "Missouri", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0495,
+      brackets: [[0, 1273, 0.02], [1273, 2546, 0.025], [2546, 3819, 0.03], [3819, 5092, 0.035], [5092, 6365, 0.04], [6365, 7638, 0.045], [7638, 8911, 0.047], [8911, null, 0.0495]],
+      sourceUrl: "https://dor.mo.gov/",
+      description: "Missouri personal income tax. 8-bracket progressive (2025), top 4.95%." },
+
+    // Wisconsin — progressive 3.5-7.65%
+    { code: "WI", slug: "wisconsin", name: "Wisconsin", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0765,
+      brackets: [[0, 14680, 0.035], [14680, 29370, 0.044], [29370, 323290, 0.053], [323290, null, 0.0765]],
+      sourceUrl: "https://www.revenue.wi.gov/",
+      description: "Wisconsin personal income tax. 4-bracket progressive (2025), top 7.65%." },
+
+    // Colorado — flat 4.4%
+    { code: "CO", slug: "colorado", name: "Colorado", taxType: "flat", hasIncomeTax: true, stdDeduction: 0, topRate: 0.044,
+      brackets: [[0, null, 0.044]],
+      sourceUrl: "https://tax.colorado.gov/",
+      description: "Colorado personal income tax. Flat 4.4% (2025)." },
+
+    // Minnesota — progressive 5.35-9.85%
+    { code: "MN", slug: "minnesota", name: "Minnesota", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0985,
+      brackets: [[0, 31690, 0.0535], [31690, 104090, 0.068], [104090, 193240, 0.0785], [193240, null, 0.0985]],
+      sourceUrl: "https://www.revenue.state.mn.us/",
+      description: "Minnesota personal income tax. 4-bracket progressive (2025), top 9.85%." },
+
+    // South Carolina — progressive 3-6.8% (resets at lower amounts)
+    { code: "SC", slug: "south-carolina", name: "South Carolina", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.068,
+      brackets: [[0, 3460, 0.03], [3460, 17330, 0.064], [17330, null, 0.068]],
+      sourceUrl: "https://dor.sc.gov/",
+      description: "South Carolina personal income tax. 3-bracket progressive (2025), top 6.8%." },
+
+    // Alabama — progressive 2-5%
+    { code: "AL", slug: "alabama", name: "Alabama", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.05,
+      brackets: [[0, 500, 0.02], [500, 3000, 0.04], [3000, null, 0.05]],
+      sourceUrl: "https://www.revenue.alabama.gov/",
+      description: "Alabama personal income tax. 3-bracket progressive (2025), top 5%." },
+
+    // Louisiana — progressive 3-4.45%
+    { code: "LA", slug: "louisiana", name: "Louisiana", taxType: "progressive", hasIncomeTax: true, stdDeduction: 0, topRate: 0.0445,
+      brackets: [[0, 5000, 0.03], [5000, null, 0.0445]],
+      sourceUrl: "https://revenue.louisiana.gov/",
+      description: "Louisiana personal income tax. 2-bracket progressive (2025): 3% / 4.45%." },
+
+    // Tennessee — no state income tax
+    { code: "TN", slug: "tennessee", name: "Tennessee", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: null,
+      brackets: [],
+      sourceUrl: "https://www.tn.gov/revenue/",
+      description: "Tennessee has no state personal income tax. Only federal income tax applies." },
+
+    // Alaska — no state income tax
+    { code: "AK", slug: "alaska", name: "Alaska", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: null,
+      brackets: [],
+      sourceUrl: "https://dor.alaska.gov/",
+      description: "Alaska has no state personal income tax. Only federal income tax applies." },
+
+    // Nevada — no state income tax
+    { code: "NV", slug: "nevada", name: "Nevada", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: null,
+      brackets: [],
+      sourceUrl: "https://tax.nv.gov/",
+      description: "Nevada has no state personal income tax. Only federal income tax applies." },
+
+    // South Dakota — no state income tax
+    { code: "SD", slug: "south-dakota", name: "South Dakota", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: null,
+      brackets: [],
+      sourceUrl: "https://dor.sd.gov/",
+      description: "South Dakota has no state personal income tax. Only federal income tax applies." },
+
+    // Wyoming — no state income tax
+    { code: "WY", slug: "wyoming", name: "Wyoming", taxType: "none", hasIncomeTax: false, stdDeduction: 0, topRate: null,
+      brackets: [],
+      sourceUrl: "http://revenue.wyo.gov/",
+      description: "Wyoming has no state personal income tax. Only federal income tax applies." },
+  ];
+
+  for (const sd of moreStates) {
+    const state = await prisma.state.create({
+      data: {
+        countryId: usa.id,
+        code: sd.code,
+        slug: sd.slug,
+        name: sd.name,
+        hasIncomeTax: sd.hasIncomeTax,
+        taxType: sd.taxType,
+        standardDeduction: sd.stdDeduction,
+        topMarginalRate: sd.topRate,
+        description: sd.description,
+        sourceUrl: sd.sourceUrl,
+      },
+    });
+    if (sd.brackets.length > 0) {
+      await prisma.stateBracket.createMany({
+        data: sd.brackets.map((b, i) => ({
+          stateId: state.id,
+          orderIndex: i,
+          lowerBound: b[0],
+          upperBound: b[1],
+          rate: b[2],
+        })),
+      });
+    }
+  }
+
+  // ============================================================
   // UK (2025/26, England/Wales, single)
   // ============================================================
   console.log("🇬🇧 UK");
@@ -513,9 +694,9 @@ async function main() {
 
   console.log("\n✅ Seed complete!");
   console.log(`   Countries: 5 (USA, UK, Germany, France, Canada)`);
-  console.log(`   US States: 6 (CA, NY, TX, FL, IL, PA)`);
+  console.log(`   US States: 29 (top 25 by pop + 4 no-tax + DC in future)`);
   console.log(`   Tax rules: 5 (one per country, year 2025)`);
-  console.log(`   Brackets: 26 federal + 21 state = 47 total`);
+  console.log(`   Brackets: 26 federal + ~75 state = ~101 total`);
   console.log(`   Deductions: 5 (one per country)`);
   console.log(`   Salary configs: 5`);
   console.log(`   Data sources: 5`);
