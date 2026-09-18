@@ -29,6 +29,7 @@ model Country {
   taxRules         TaxRule[]
   salaryConfigs    SalaryConfig[]
   dataSources      DataSource[]
+  states           State[]
 
   @@index([code])
   @@index([slug])
@@ -128,4 +129,45 @@ model DataSource {
   country      Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
   @@index([countryId])
+}
+
+// -------------------------------------------------------------------
+// State — sub-national tax jurisdictions (US states, Canadian provinces)
+// -------------------------------------------------------------------
+model State {
+  id               Int      @id @default(autoincrement())
+  countryId        Int
+  code             String // USPS-style: "CA", "NY", "TX" (US) | "ON", "BC" (CA) | "ENG", "SCT" (UK)
+  slug             String   @unique // url-friendly: "california", "new-york"
+  name             String
+  hasIncomeTax     Boolean  @default(true)
+  taxType          String // "progressive" | "flat" | "none"
+  standardDeduction Float   @default(0) // 0 for most states
+  topMarginalRate  Float? // 0.133 for CA, null for no-tax states
+  description      String?
+  sourceUrl        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  country          Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  brackets         StateBracket[]
+
+  @@unique([countryId, code])
+  @@index([countryId, slug])
+}
+
+// -------------------------------------------------------------------
+// StateBracket — progressive brackets per state
+// -------------------------------------------------------------------
+model StateBracket {
+  id          Int     @id @default(autoincrement())
+  stateId     Int
+  orderIndex  Int
+  lowerBound  Float
+  upperBound  Float?
+  rate        Float
+
+  state       State @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@index([stateId, orderIndex])
 }

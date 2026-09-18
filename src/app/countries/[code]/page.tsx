@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";
+import { listStatesForCountry } from "@/lib/data/state";
 import { TaxCalculator } from "@/components/TaxCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
@@ -28,6 +29,7 @@ export default async function CountryHubPage({ params }: PageProps) {
 
   const year = (await getLatestTaxYear(params.code)) ?? new Date().getFullYear();
   const taxData = await getCountryTaxData(params.code, year);
+  const states = country.code === "US" ? await listStatesForCountry("US") : [];
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const url = `${base}/countries/${country.slug}`;
 
@@ -77,6 +79,37 @@ export default async function CountryHubPage({ params }: PageProps) {
 
       {/* Calculator */}
       <TaxCalculator initialCountry={country.code} initialIncome={75000} />
+
+      {/* States (US only) */}
+      {states.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              US States — state tax varies widely
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+              {states.map((s) => (
+                <Link
+                  key={s.code}
+                  href={`/us-state/${s.slug}`}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm hover:border-blue-400 hover:bg-blue-50"
+                >
+                  <span className="font-medium text-slate-900">{s.name}</span>
+                  <span className="text-xs text-slate-500">
+                    {s.hasIncomeTax
+                      ? s.taxType === "flat"
+                        ? `flat ${(s.topMarginalRate! * 100).toFixed(2)}%`
+                        : `top ${(s.topMarginalRate! * 100).toFixed(1)}%`
+                      : "no state tax"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Brackets preview */}
       {taxData && (

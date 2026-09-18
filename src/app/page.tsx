@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { listCountries } from "@/lib/data/country";
+import { listStatesForCountry } from "@/lib/data/state";
 import { TaxCalculator } from "@/components/TaxCalculator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui/card";
 import { JsonLd, organizationLd, softwareApplicationLd } from "@/components/JsonLd";
 import { ArrowRight, Globe2, ShieldCheck, Zap } from "lucide-react";
 
@@ -9,6 +10,7 @@ export const revalidate = 3600;
 
 export default async function HomePage() {
   const countries = await listCountries();
+  const usStates = await listStatesForCountry("US");
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   return (
@@ -56,9 +58,35 @@ export default async function HomePage() {
       <section>
         <h2 className="text-2xl font-semibold text-slate-900">Supported countries</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Federal/national level. State and provincial breakdowns coming in Phase 1+.
+          Federal/national level. US state breakdowns live below.
         </p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {usStates.length > 0 && (
+            <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span>🇺🇸</span> US States
+                  <Badge>{usStates.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="grid grid-cols-3 gap-1">
+                  {usStates.slice(0, 9).map((s) => (
+                    <Link
+                      key={s.code}
+                      href={`/us-state/${s.slug}`}
+                      className="rounded px-2 py-1 text-xs hover:bg-blue-100"
+                    >
+                      {s.code}
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/countries/usa" className="block text-xs text-blue-600 hover:underline pt-1">
+                  See all US states →
+                </Link>
+              </CardContent>
+            </Card>
+          )}
           {countries.map((c) => (
             <Link key={c.code} href={`/countries/${c.slug}/`}>
               <Card className="h-full transition-shadow hover:shadow-md">

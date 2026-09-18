@@ -13,6 +13,8 @@ async function main() {
   console.log("🌱 Seeding tax data for 2025...\n");
 
   // Clean prior data (idempotent)
+  await prisma.stateBracket.deleteMany();
+  await prisma.state.deleteMany();
   await prisma.taxBracket.deleteMany();
   await prisma.deduction.deleteMany();
   await prisma.taxRule.deleteMany();
@@ -92,6 +94,143 @@ async function main() {
       organization: "IRS",
       reliability: "high",
     },
+  });
+
+  // ============================================================
+  // US STATES (top 6 by population) — 2025
+  // ============================================================
+  console.log("  States: CA, NY, TX, FL, IL, PA");
+
+  // California — 9-bracket progressive, top 13.3%
+  const caState = await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "CA",
+      slug: "california",
+      name: "California",
+      hasIncomeTax: true,
+      taxType: "progressive",
+      standardDeduction: 5540,
+      topMarginalRate: 0.123,
+      description: "California personal income tax. 2025 brackets, single filer. State standard deduction $5,540.",
+      sourceUrl: "https://www.ftb.ca.gov/forms/2024/2024-540.pdf",
+    },
+  });
+  await prisma.stateBracket.createMany({
+    data: [
+      { stateId: caState.id, orderIndex: 0, lowerBound: 0, upperBound: 10756, rate: 0.01 },
+      { stateId: caState.id, orderIndex: 1, lowerBound: 10756, upperBound: 25499, rate: 0.02 },
+      { stateId: caState.id, orderIndex: 2, lowerBound: 25499, upperBound: 40245, rate: 0.04 },
+      { stateId: caState.id, orderIndex: 3, lowerBound: 40245, upperBound: 55866, rate: 0.06 },
+      { stateId: caState.id, orderIndex: 4, lowerBound: 55866, upperBound: 70606, rate: 0.08 },
+      { stateId: caState.id, orderIndex: 5, lowerBound: 70606, upperBound: 360659, rate: 0.093 },
+      { stateId: caState.id, orderIndex: 6, lowerBound: 360659, upperBound: 432787, rate: 0.103 },
+      { stateId: caState.id, orderIndex: 7, lowerBound: 432787, upperBound: 721314, rate: 0.113 },
+      { stateId: caState.id, orderIndex: 8, lowerBound: 721314, upperBound: null, rate: 0.123 },
+    ],
+  });
+
+  // New York — 9-bracket progressive, top 10.9%
+  const ny = await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "NY",
+      slug: "new-york",
+      name: "New York",
+      hasIncomeTax: true,
+      taxType: "progressive",
+      standardDeduction: 8000,
+      topMarginalRate: 0.109,
+      description: "New York State personal income tax. 2025 brackets, single filer. State standard deduction $8,000.",
+      sourceUrl: "https://www.tax.ny.gov/forms/income_tax_forms.htm",
+    },
+  });
+  await prisma.stateBracket.createMany({
+    data: [
+      { stateId: ny.id, orderIndex: 0, lowerBound: 0, upperBound: 8500, rate: 0.04 },
+      { stateId: ny.id, orderIndex: 1, lowerBound: 8500, upperBound: 11700, rate: 0.045 },
+      { stateId: ny.id, orderIndex: 2, lowerBound: 11700, upperBound: 13900, rate: 0.0525 },
+      { stateId: ny.id, orderIndex: 3, lowerBound: 13900, upperBound: 80650, rate: 0.055 },
+      { stateId: ny.id, orderIndex: 4, lowerBound: 80650, upperBound: 215400, rate: 0.06 },
+      { stateId: ny.id, orderIndex: 5, lowerBound: 215400, upperBound: 1077550, rate: 0.0685 },
+      { stateId: ny.id, orderIndex: 6, lowerBound: 1077550, upperBound: 5000000, rate: 0.0965 },
+      { stateId: ny.id, orderIndex: 7, lowerBound: 5000000, upperBound: 25000000, rate: 0.103 },
+      { stateId: ny.id, orderIndex: 8, lowerBound: 25000000, upperBound: null, rate: 0.109 },
+    ],
+  });
+
+  // Texas — NO state income tax
+  await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "TX",
+      slug: "texas",
+      name: "Texas",
+      hasIncomeTax: false,
+      taxType: "none",
+      standardDeduction: 0,
+      topMarginalRate: null,
+      description: "Texas has no state personal income tax. Only federal income tax applies.",
+      sourceUrl: "https://comptroller.texas.gov/taxes/payroll/",
+    },
+  });
+
+  // Florida — NO state income tax
+  await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "FL",
+      slug: "florida",
+      name: "Florida",
+      hasIncomeTax: false,
+      taxType: "none",
+      standardDeduction: 0,
+      topMarginalRate: null,
+      description: "Florida has no state personal income tax. Only federal income tax applies.",
+      sourceUrl: "https://floridarevenue.com/taxes/taxesfees/Pages/income_tax.aspx",
+    },
+  });
+
+  // Illinois — flat 4.95%
+  const il = await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "IL",
+      slug: "illinois",
+      name: "Illinois",
+      hasIncomeTax: true,
+      taxType: "flat",
+      standardDeduction: 0,
+      topMarginalRate: 0.0495,
+      description: "Illinois personal income tax. Flat 4.95% on all income (2025).",
+      sourceUrl: "https://www2.illinois.gov/rev/Pages/default.aspx",
+    },
+  });
+  await prisma.stateBracket.createMany({
+    data: [
+      { stateId: il.id, orderIndex: 0, lowerBound: 0, upperBound: null, rate: 0.0495 },
+    ],
+  });
+
+  // Pennsylvania — flat 3.07%
+  const pa = await prisma.state.create({
+    data: {
+      countryId: usa.id,
+      code: "PA",
+      slug: "pennsylvania",
+      name: "Pennsylvania",
+      hasIncomeTax: true,
+      taxType: "flat",
+      standardDeduction: 0,
+      topMarginalRate: 0.0307,
+      description: "Pennsylvania personal income tax. Flat 3.07% on all income (2025).",
+      sourceUrl: "https://www.revenue.pa.gov/",
+    },
+  });
+  await prisma.stateBracket.createMany({
+    data: [
+      { stateId: pa.id, orderIndex: 0, lowerBound: 0, upperBound: null, rate: 0.0307 },
+    ],
   });
 
   // ============================================================
@@ -374,8 +513,9 @@ async function main() {
 
   console.log("\n✅ Seed complete!");
   console.log(`   Countries: 5 (USA, UK, Germany, France, Canada)`);
+  console.log(`   US States: 6 (CA, NY, TX, FL, IL, PA)`);
   console.log(`   Tax rules: 5 (one per country, year 2025)`);
-  console.log(`   Brackets: 26 total`);
+  console.log(`   Brackets: 26 federal + 21 state = 47 total`);
   console.log(`   Deductions: 5 (one per country)`);
   console.log(`   Salary configs: 5`);
   console.log(`   Data sources: 5`);

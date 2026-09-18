@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { listCountries } from "@/lib/data/country";
+import { listStatesForCountry } from "@/lib/data/state";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const countries = await listCountries();
+  const usStates = await listStatesForCountry("US");
   const now = new Date();
 
   return [
@@ -22,6 +24,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.7,
+    })),
+    ...usStates.map((s) => ({
+      url: `${BASE}/us-state/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
   ];
 }
