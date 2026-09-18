@@ -201,7 +201,7 @@ export default async function SeoDashboardPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-4 text-sm">
             <Stat label="Total entities" value={entities.stats.totalEntities} />
-            <Stat label="Total relationships" value={entities.stats.relationships} />
+            <Stat label="Total relationships" value={entities.stats.totalRelationships} />
             {Object.entries(entities.stats.byType).map(([type, count]) => (
               <Stat key={type} label={type} value={count} />
             ))}
