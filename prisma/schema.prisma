@@ -1,0 +1,131 @@
+// Global Tax Tools — Prisma Schema
+// Versioned tax rules per country/year. SQLite for Phase 0, easy migration to PostgreSQL later.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------------
+// Country master data
+// -------------------------------------------------------------------
+model Country {
+  id               Int      @id @default(autoincrement())
+  code             String   @unique // ISO 3166-1 alpha-2: US, GB, DE, FR, CA
+  slug             String   @unique // url-friendly: usa, uk, germany, france, canada
+  name             String
+  region           String // "North America" | "Europe" | ...
+  defaultCurrency  String // ISO 4217: USD, GBP, EUR, CAD
+  flagEmoji        String?
+  taxSystem        String // "progressive" | "flat" | "hybrid"
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  taxRules         TaxRule[]
+  salaryConfigs    SalaryConfig[]
+  dataSources      DataSource[]
+
+  @@index([code])
+  @@index([slug])
+  @@index([region])
+}
+
+// -------------------------------------------------------------------
+// TaxRule (versioned per country + year + type)
+// -------------------------------------------------------------------
+model TaxRule {
+  id            Int       @id @default(autoincrement())
+  countryId     Int
+  year          Int // 2025, 2026, 2027
+  type          String // "income_tax" | "capital_gains" | "corporate_tax"
+  version       Int       @default(1)
+  status        String    @default("published") // "draft" | "published" | "archived"
+  effectiveFrom DateTime?
+  sourceUrl     String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  publishedAt   DateTime?
+
+  country       Country       @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  brackets      TaxBracket[]
+  deductions    Deduction[]
+
+  @@unique([countryId, year, type, version])
+  @@index([countryId, year, type, status])
+}
+
+// -------------------------------------------------------------------
+// TaxBracket — progressive bracket definition
+// -------------------------------------------------------------------
+model TaxBracket {
+  id          Int    @id @default(autoincrement())
+  taxRuleId   Int
+  orderIndex  Int
+  lowerBound  Float // in country default currency
+  upperBound  Float? // null = infinity (top bracket)
+  rate        Float // 0.10 for 10%
+  fixedAmount Float? // for "X + Y% over Z" style (e.g. Germany formula)
+
+  taxRule     TaxRule @relation(fields: [taxRuleId], references: [id], onDelete: Cascade)
+
+  @@index([taxRuleId, orderIndex])
+}
+
+// -------------------------------------------------------------------
+// Deduction — allowances applied before tax calc
+// -------------------------------------------------------------------
+model Deduction {
+  id         Int     @id @default(autoincrement())
+  taxRuleId  Int
+  name       String // "Personal Allowance", "Standard Deduction"
+  type       String // "standard" | "additional" | "personal"
+  amount     Float // absolute amount (e.g. 14600 for US 2024 standard deduction)
+  percentage Float? // optional: percentage of income
+  conditions String? // JSON-encoded conditions
+
+  taxRule    TaxRule @relation(fields: [taxRuleId], references: [id], onDelete: Cascade)
+
+  @@index([taxRuleId])
+}
+
+// -------------------------------------------------------------------
+// SalaryConfig — payroll / social security per country/year
+// -------------------------------------------------------------------
+model SalaryConfig {
+  id                  Int     @id @default(autoincrement())
+  countryId           Int
+  year                Int
+  employeeSocialRate  Float // e.g. 0.0765 US Social Security
+  employerSocialRate  Float
+  socialCap           Float? // max salary subject to social (US SS = 168600)
+  healthcareRate      Float?
+  healthcareCap       Float?
+  notes               String?
+
+  country             Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@unique([countryId, year])
+}
+
+// -------------------------------------------------------------------
+// DataSource — citation tracking for E-E-A-T trust signal
+// -------------------------------------------------------------------
+model DataSource {
+  id           Int      @id @default(autoincrement())
+  countryId    Int
+  sourceUrl    String
+  organization String // "IRS" | "HMRC" | "BMF" | etc
+  retrievedAt  DateTime @default(now())
+  reliability  String   @default("high") // "high" | "medium" | "low"
+  notes        String?
+
+  country      Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([countryId])
+}
