@@ -692,14 +692,183 @@ async function main() {
     },
   });
 
+  // ============================================================
+  // PHASE 2 — Additional countries (G7 remainder + expat-heavy)
+  // ============================================================
+  console.log("\n🌍 Phase 2: IT, JP, AU, ES, NL, IE, CH, SG, AE");
+
+  type CountrySpec = {
+    code: string; slug: string; name: string; region: string;
+    currency: string; flagEmoji: string; taxSystem: string;
+    description: string; sourceUrl: string; orgName: string;
+    brackets: Array<[number, number | null, number]>;
+    deductions?: Array<{ name: string; type: string; amount: number; pct?: number }>;
+    socialRate?: number; socialCap?: number | null; socialNotes?: string;
+  };
+
+  const newCountries: CountrySpec[] = [
+    // Italy — IRPEF 2025 (regional/municipal surtax not modeled)
+    { code: "IT", slug: "italy", name: "Italy", region: "Europe",
+      currency: "EUR", flagEmoji: "🇮🇹", taxSystem: "progressive",
+      description: "Italian IRPEF (Imposta sul Reddito delle Persone Fisiche). 2025 national brackets, single filer. Regional/municipal addizionale not modeled.",
+      sourceUrl: "https://www.agenziaentrate.gov.it/portale/web/guest/schede/dichiarazioni/irpef/come-si-calcola",
+      orgName: "Agenzia delle Entrate",
+      brackets: [[0, 28000, 0.23], [28000, 50000, 0.35], [50000, null, 0.43]],
+      socialRate: 0.0991, socialCap: null, socialNotes: "INPS employee contributions ~9.91% (no cap)." },
+
+    // Japan — 2025 national income tax (¥1 = roughly USD $0.0066)
+    { code: "JP", slug: "japan", name: "Japan", region: "Asia",
+      currency: "JPY", flagEmoji: "🇯🇵", taxSystem: "progressive",
+      description: "Japan national income tax (所得税). 2025 brackets, single filer. Includes 2.1% reconstruction tax (special income tax for reconstruction). Local inhabitant tax not modeled.",
+      sourceUrl: "https://www.nta.go.jp/english/taxes/individual/index.htm",
+      orgName: "NTA (National Tax Agency)",
+      brackets: [
+        [0, 1950000, 0.05], [1950000, 3300000, 0.10], [3300000, 6950000, 0.20],
+        [6950000, 9000000, 0.23], [9000000, 18000000, 0.33], [18000000, 40000000, 0.40], [40000000, null, 0.45],
+      ],
+      deductions: [{ name: "Basic Deduction (基礎控除)", type: "standard", amount: 480000 }],
+      socialRate: 0.1490, socialCap: null, socialNotes: "Employee social insurance ~14.9% (health 5%, pension 9.15%, employment 0.6%, etc.)" },
+
+    // Australia — 2025-26 tax year (July 2025 - June 2026)
+    { code: "AU", slug: "australia", name: "Australia", region: "Oceania",
+      currency: "AUD", flagEmoji: "🇦🇺", taxSystem: "progressive",
+      description: "Australian federal income tax. 2025-26 financial year (starts July 2025). 4-bracket system. Medicare levy 2% added separately (not modeled).",
+      sourceUrl: "https://www.ato.gov.au/Rates/Individual-income-tax-rates",
+      orgName: "ATO",
+      brackets: [[0, 18200, 0], [18200, 45000, 0.16], [45000, 135000, 0.30], [135000, 190000, 0.37], [190000, null, 0.45]],
+      socialRate: 0, socialCap: null, socialNotes: "Medicare levy 2% on income above threshold, superannuation separate." },
+
+    // Spain — IRPF 2025 (state + autonomous community not modeled)
+    { code: "ES", slug: "spain", name: "Spain", region: "Europe",
+      currency: "EUR", flagEmoji: "🇪🇸", taxSystem: "progressive",
+      description: "Spanish IRPF (Impuesto sobre la Renta de las Personas Físicas). 2025 national brackets, single filer. Autonomous community rates vary (state portion only modeled).",
+      sourceUrl: "https://www.agenciatributaria.es/AEAT.internet/en_gb/Inicio/La_Agencia_Tributaria/Campanas/_Personal_.html",
+      orgName: "Agencia Tributaria",
+      brackets: [
+        [0, 12450, 0.19], [12450, 20200, 0.24], [20200, 35200, 0.30],
+        [35200, 60000, 0.37], [60000, 300000, 0.45], [300000, null, 0.47],
+      ],
+      socialRate: 0.0635, socialCap: null, socialNotes: "Seguridad Social employee ~6.35% (general regime)." },
+
+    // Netherlands — 3-bracket system 2025
+    { code: "NL", slug: "netherlands", name: "Netherlands", region: "Europe",
+      currency: "EUR", flagEmoji: "🇳🇱", taxSystem: "progressive",
+      description: "Dutch inkomstenbelasting. 2025 3-bracket system (Box 1 only). General tax credit + labor credit applied via standard deduction.",
+      sourceUrl: "https://www.belastingdienst.nl/wps/wcm/connect/bldcontenten/belastingdienst/individuals/income-tax",
+      orgName: "Belastingdienst",
+      brackets: [[0, 38441, 0.0942], [38441, 76817, 0.3748], [76817, null, 0.495]],
+      socialRate: 0.0975, socialCap: null, socialNotes: "Employee social premiums ~9.75% (AOW, WLZ, WIA, etc.)" },
+
+    // Ireland — USC + income tax (simplified, only income tax modeled)
+    { code: "IE", slug: "ireland", name: "Ireland", region: "Europe",
+      currency: "EUR", flagEmoji: "🇮🇪", taxSystem: "progressive",
+      description: "Irish income tax. 2025 PAYE rates, single filer. Universal Social Charge (USC) and PRSI not modeled.",
+      sourceUrl: "https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx",
+      orgName: "Revenue",
+      brackets: [[0, 42000, 0.20], [42000, null, 0.40]],
+      socialRate: 0.04, socialCap: null, socialNotes: "PRSI ~4% (employee, Class A1). USC additional 0.5-8% on top, not modeled." },
+
+    // Switzerland — federal direct tax 2025
+    { code: "CH", slug: "switzerland", name: "Switzerland", region: "Europe",
+      currency: "CHF", flagEmoji: "🇨🇭", taxSystem: "progressive",
+      description: "Swiss federal direct tax (DBG). 2025 brackets, single. Cantonal + communal taxes (typically 1.5-3× federal) not modeled.",
+      sourceUrl: "https://www.estv.admin.ch/estv/en/home.html",
+      orgName: "ESTV (FTA)",
+      brackets: [
+        [0, 14500, 0], [14500, 31600, 0.0077], [31600, 41400, 0.0088],
+        [41400, 55200, 0.0297], [55200, 72500, 0.0594], [72500, 78100, 0.066],
+        [78100, 103600, 0.088], [103600, 134600, 0.11], [134600, null, 0.132],
+      ],
+      socialRate: 0.105, socialCap: null, socialNotes: "AHV/IV/EO ~5.275%, ALV ~1.1%, pension ~varies. Simplified 10.5%." },
+
+    // Singapore — 2025 progressive (no capital gains tax, no tax on foreign-sourced income remitted)
+    { code: "SG", slug: "singapore", name: "Singapore", region: "Asia",
+      currency: "SGD", flagEmoji: "🇸🇬", taxSystem: "progressive",
+      description: "Singapore income tax (YA 2025). Non-resident: 15% flat / 22% from YA 2024+. Resident: progressive below. Top marginal 24%.",
+      sourceUrl: "https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/tax-residents/individual-income-tax-rates",
+      orgName: "IRAS",
+      brackets: [
+        [0, 20000, 0], [20000, 30000, 0.02], [30000, 40000, 0.035], [40000, 80000, 0.07],
+        [80000, 120000, 0.115], [120000, 160000, 0.15], [160000, 200000, 0.18],
+        [200000, 240000, 0.19], [240000, 280000, 0.195], [280000, 320000, 0.20],
+        [320000, 500000, 0.22], [500000, 1000000, 0.23], [1000000, null, 0.24],
+      ],
+      socialRate: 0.20, socialCap: null, socialNotes: "CPF (Central Provident Fund) ~20% employee share (citizens/PRs only). Not applied to foreigners — Phase 0 simplification always applies 20%." },
+
+    // UAE — no personal income tax (but corporate tax 9% on profits > AED 375K from 2023)
+    { code: "AE", slug: "uae", name: "United Arab Emirates", region: "Asia",
+      currency: "AED", flagEmoji: "🇦🇪", taxSystem: "none",
+      description: "UAE has no federal personal income tax. Corporate tax 9% applies from June 2023 (not modeled). Salary = gross, no deductions.",
+      sourceUrl: "https://u.ae/en/information-and-services/finance-and-investment/taxation",
+      orgName: "Federal Tax Authority",
+      brackets: [],
+      socialRate: 0.05, socialCap: null, socialNotes: "GPSSA (UAE nationals) 5% — most expats not subject. Phase 0 keeps it simple." },
+  ];
+
+  for (const cs of newCountries) {
+    console.log(`  ${cs.flagEmoji} ${cs.name}`);
+    const country = await prisma.country.create({
+      data: {
+        code: cs.code, slug: cs.slug, name: cs.name, region: cs.region,
+        defaultCurrency: cs.currency, flagEmoji: cs.flagEmoji,
+        taxSystem: cs.taxSystem, description: cs.description,
+      },
+    });
+
+    if (cs.brackets.length > 0) {
+      const taxRule = await prisma.taxRule.create({
+        data: {
+          countryId: country.id, year: 2025, type: "income_tax",
+          version: 1, status: "published",
+          sourceUrl: cs.sourceUrl, notes: cs.description,
+          publishedAt: new Date(),
+        },
+      });
+      await prisma.taxBracket.createMany({
+        data: cs.brackets.map((b, i) => ({
+          taxRuleId: taxRule.id, orderIndex: i,
+          lowerBound: b[0], upperBound: b[1], rate: b[2],
+        })),
+      });
+      if (cs.deductions && cs.deductions.length > 0) {
+        await prisma.deduction.createMany({
+          data: cs.deductions.map((d) => ({
+            taxRuleId: taxRule.id, name: d.name, type: d.type,
+            amount: d.amount, percentage: d.pct ?? null,
+          })),
+        });
+      }
+    }
+
+    if (cs.socialRate !== undefined) {
+      await prisma.salaryConfig.create({
+        data: {
+          countryId: country.id, year: 2025,
+          employeeSocialRate: cs.socialRate,
+          employerSocialRate: cs.socialRate,
+          socialCap: cs.socialCap ?? null,
+          healthcareRate: 0, healthcareCap: null,
+          notes: cs.socialNotes ?? null,
+        },
+      });
+    }
+
+    await prisma.dataSource.create({
+      data: {
+        countryId: country.id, sourceUrl: cs.sourceUrl,
+        organization: cs.orgName, reliability: "high",
+      },
+    });
+  }
+
   console.log("\n✅ Seed complete!");
-  console.log(`   Countries: 5 (USA, UK, Germany, France, Canada)`);
+  console.log(`   Countries: 14 (USA, UK, Germany, France, Canada + IT, JP, AU, ES, NL, IE, CH, SG, AE)`);
   console.log(`   US States: 29 (top 25 by pop + 4 no-tax + DC in future)`);
-  console.log(`   Tax rules: 5 (one per country, year 2025)`);
-  console.log(`   Brackets: 26 federal + ~75 state = ~101 total`);
-  console.log(`   Deductions: 5 (one per country)`);
-  console.log(`   Salary configs: 5`);
-  console.log(`   Data sources: 5`);
+  console.log(`   Tax rules: 14 (one per country, year 2025)`);
+  console.log(`   Brackets: 26 federal + ~75 state + ~70 international ≈ 170 total`);
+  console.log(`   Deductions: 7 (1 US federal + 1 UK + 1 DE + 1 CA + 1 IT + 1 JP + 1 NL implied via tax credits)`);
+  console.log(`   Salary configs: 14`);
+  console.log(`   Data sources: 14`);
 }
 
 main()

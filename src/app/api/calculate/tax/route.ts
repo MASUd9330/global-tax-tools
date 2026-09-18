@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateProgressiveTax } from "@/lib/calc/tax";
-import { getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";
+import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";
 import { getStateTaxData } from "@/lib/data/state";
 
 const BodySchema = z.object({
@@ -30,26 +30,60 @@ export async function POST(req: NextRequest) {
 
   const { country, state, income, taxType } = parsed.data;
   let { year } = parsed.data;
+
+  // First, check the country exists and get its tax system
+  const countryInfo = await getCountry(country);
+  if (!countryInfo) {
+    return NextResponse.json({ error: `Country not found: ${country}` }, { status: 404 });
+  }
+
   if (!year) {
     const latest = await getLatestTaxYear(country);
-    if (!latest) {
+    if (latest) {
+      year = latest;
+    } else if (countryInfo.taxSystem === "none") {
+      // No-tax countries may have no TaxRule record; use current year
+      year = new Date().getFullYear();
+    } else {
       return NextResponse.json(
         { error: `No tax data available for ${country}` },
         { status: 404 }
       );
     }
-    year = latest;
   }
 
   // Federal / country-level tax
+  // Handle no-tax countries (UAE etc.) by returning zero tax instead of 404
   const data = await getCountryTaxData(country, year, taxType);
+  let federalResult;
+  let metaSourceUrl: string | null = null;
+  let metaNotes: string | null = null;
+  let metaLastUpdated: Date = new Date();
+
   if (!data) {
-    return NextResponse.json(
-      { error: `No ${taxType} data for ${country} ${year}` },
-      { status: 404 }
-    );
+    if (countryInfo.taxSystem === "none") {
+      // No-tax country: zero federal income tax
+      federalResult = {
+        grossIncome: income,
+        taxableIncome: income,
+        totalTax: 0,
+        effectiveRate: 0,
+        marginalRate: 0,
+        breakdown: [],
+        deductionsApplied: [],
+      };
+    } else {
+      return NextResponse.json(
+        { error: `No ${taxType} data for ${country} ${year}` },
+        { status: 404 }
+      );
+    }
+  } else {
+    federalResult = calculateProgressiveTax(income, data.brackets, data.deductions);
+    metaSourceUrl = data.sourceUrl;
+    metaNotes = data.notes;
+    metaLastUpdated = data.lastUpdated;
   }
-  const federalResult = calculateProgressiveTax(income, data.brackets, data.deductions);
 
   // State tax (optional, country must match state country)
   let stateResult: ReturnType<typeof calculateProgressiveTax> | null = null;
@@ -76,13 +110,13 @@ export async function POST(req: NextRequest) {
   const combinedEffectiveRate = income > 0 ? combinedTotalTax / income : 0;
 
   return NextResponse.json({
-    input: { country: data.country, state: stateInfo?.state ?? null, year: data.year, taxType, income },
+    input: { country: countryInfo, state: stateInfo?.state ?? null, year, taxType, income },
     meta: {
-      sourceUrl: data.sourceUrl,
+      sourceUrl: metaSourceUrl,
       stateSourceUrl: stateInfo?.sourceUrl ?? null,
-      notes: data.notes,
-      lastUpdated: data.lastUpdated,
-      currency: data.country.defaultCurrency,
+      notes: metaNotes,
+      lastUpdated: metaLastUpdated,
+      currency: countryInfo.defaultCurrency,
     },
     result: {
       federal: federalResult,
