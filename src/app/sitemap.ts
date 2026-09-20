@@ -1,14 +1,26 @@
 import type { MetadataRoute } from "next";
 import { listCountries } from "@/lib/data/country";
 import { listStatesForCountry } from "@/lib/data/state";
-import { getPopularComparisons } from "@/lib/data/compare";
+
+// Static list of curated comparison pairs (avoids DB query at request time)
+const POPULAR_COMPARISONS = [
+  "texas-vs-california", "florida-vs-new-york", "texas-vs-new-york", "florida-vs-california",
+  "washington-vs-california", "nevada-vs-california", "tennessee-vs-new-york", "illinois-vs-florida",
+  "pennsylvania-vs-new-york", "california-vs-colorado", "new-york-vs-florida", "california-vs-arizona",
+  "new-york-vs-illinois", "california-vs-illinois", "california-vs-massachusetts",
+  "usa-vs-uk", "usa-vs-canada", "uk-vs-canada", "usa-vs-germany", "germany-vs-france",
+  "uk-vs-germany", "uae-vs-usa", "uae-vs-uk", "uk-vs-australia", "germany-vs-netherlands",
+  "canada-vs-australia", "japan-vs-uk",
+];
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+// Dynamic: sitemap regenerates per request
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const countries = await listCountries();
   const usStates = await listStatesForCountry("US");
-  const popularComparisons = await getPopularComparisons();
   const now = new Date();
 
   return [
@@ -35,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
-    ...popularComparisons.map((pair) => ({
+    ...POPULAR_COMPARISONS.map((pair) => ({
       url: `${BASE}/compare/${pair}`,
       lastModified: now,
       changeFrequency: "monthly" as const,

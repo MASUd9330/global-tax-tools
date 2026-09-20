@@ -1,15 +1,27 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getPopularComparisons } from "@/lib/data/compare";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Dynamic: avoid DB at build
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Compare Income Tax Across Countries & States",
   description: "Side-by-side income tax comparisons between countries and US states. Find the lower-tax option at any salary.",
 };
 
-export default async function CompareIndexPage() {
-  const popular = await getPopularComparisons();
+const POPULAR_PAIRS = [
+  "texas-vs-california", "florida-vs-new-york", "texas-vs-new-york", "florida-vs-california",
+  "washington-vs-california", "nevada-vs-california", "tennessee-vs-new-york", "illinois-vs-florida",
+  "pennsylvania-vs-new-york", "california-vs-colorado", "new-york-vs-florida", "california-vs-arizona",
+  "new-york-vs-illinois", "california-vs-illinois", "california-vs-massachusetts",
+  "usa-vs-uk", "usa-vs-canada", "uk-vs-canada", "usa-vs-germany", "germany-vs-france",
+  "uk-vs-germany", "uae-vs-usa", "uae-vs-uk", "uk-vs-australia", "germany-vs-netherlands",
+  "canada-vs-australia", "japan-vs-uk",
+];
+
+export default function CompareIndexPage() {
+  const popular = POPULAR_PAIRS;
 
   // Group by type
   const usStatePairs = popular.filter((p) => {

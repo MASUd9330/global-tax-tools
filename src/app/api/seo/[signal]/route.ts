@@ -5,6 +5,9 @@ import { detectContentGaps } from "@/lib/seo/content-gaps";
 import { getFreshnessReport } from "@/lib/seo/freshness";
 import { getEntityGraph } from "@/lib/seo/entities";
 
+// Force dynamic (DB at request time, not build time)
+export const dynamic = "force-dynamic";
+
 /** GET /api/seo/[signal] — individual signal */
 export async function GET(
   _req: NextRequest,

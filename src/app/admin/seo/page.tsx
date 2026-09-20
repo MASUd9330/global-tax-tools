@@ -7,6 +7,7 @@ import { getFreshnessReport } from "@/lib/seo/freshness";
 import { getEntityGraph } from "@/lib/seo/entities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Dynamic: DB queries at request time
 export const dynamic = "force-dynamic";
 export const metadata = { title: "SEO Intelligence Dashboard" };
 

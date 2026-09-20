@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { listCountries } from "@/lib/data/country";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Dynamic: DB queries at request time
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Countries — Global Tax Calculator",
   description: "Browse income tax calculators by country.",

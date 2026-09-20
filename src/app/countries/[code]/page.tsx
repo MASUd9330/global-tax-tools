@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { JsonLd, breadcrumbLd, softwareApplicationLd } from "@/components/JsonLd";
 
+// Dynamic: DB queries happen at request time (avoids DATABASE_URL needed at build)
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: { code: string };
 }

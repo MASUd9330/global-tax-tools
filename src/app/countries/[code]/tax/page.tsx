@@ -5,6 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { getCountry, getLatestTaxYear } from "@/lib/data/country";
 import { TaxCalculator } from "@/components/TaxCalculator";
 
+// Dynamic: DB queries at request time
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: { code: string };
 }

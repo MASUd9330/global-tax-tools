@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force dynamic (DB at request time, not build time)
+export const dynamic = "force-dynamic";
 import { z } from "zod";
 import { calculateProgressiveTax } from "@/lib/calc/tax";
 import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Force dynamic (DB at request time, not build time)
+export const dynamic = "force-dynamic";
 import { z } from "zod";
 import { calculateSalary } from "@/lib/calc/salary";
 import {

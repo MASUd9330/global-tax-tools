@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getState, getStateTaxData } from "@/lib/data/state";
 
+// Force dynamic (DB at request time, not build time)
+export const dynamic = "force-dynamic";
+
 /** GET /api/states/[code]?country=US — get one state */
 export async function GET(
   req: NextRequest,

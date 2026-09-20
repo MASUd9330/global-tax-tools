@@ -2,19 +2,18 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { parseComparison, buildPairSlug, getPopularComparisons, calculateForSide } from "@/lib/data/compare";
+import { parseComparison, buildPairSlug, calculateForSide } from "@/lib/data/compare";
 import { getLatestTaxYear } from "@/lib/data/country";
 import { CompareCalculator } from "@/components/CompareCalculator";
 import { JsonLd, breadcrumbLd, faqLd, softwareApplicationLd } from "@/components/JsonLd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Force dynamic rendering — DB queries happen at request time, not build time.
+// This avoids DATABASE_URL being required at build (Vercel SQLite-not-supported issue).
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: { pair: string };
-}
-
-export async function generateStaticParams() {
-  const popular = await getPopularComparisons();
-  return popular.map((p) => ({ pair: p }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -158,15 +157,24 @@ export default async function ComparePage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      {/* Other comparisons */}
-      <OtherComparisons currentPair={pairSlug} leftSlug={resolved.left.slug} rightSlug={resolved.right.slug} />
+      {/* Other comparisons - static list (no DB query at request time) */}
+      <OtherComparisons currentPair={pairSlug} />
     </div>
   );
 }
 
-async function OtherComparisons({ currentPair, leftSlug, rightSlug }: { currentPair: string; leftSlug: string; rightSlug: string }) {
-  const popular = await getPopularComparisons();
-  const others = popular.filter((p) => p !== currentPair).slice(0, 12);
+const POPULAR_PAIRS = [
+  "texas-vs-california", "florida-vs-new-york", "texas-vs-new-york", "florida-vs-california",
+  "washington-vs-california", "nevada-vs-california", "tennessee-vs-new-york", "illinois-vs-florida",
+  "pennsylvania-vs-new-york", "california-vs-colorado", "new-york-vs-florida", "california-vs-arizona",
+  "new-york-vs-illinois", "california-vs-illinois", "california-vs-massachusetts",
+  "usa-vs-uk", "usa-vs-canada", "uk-vs-canada", "usa-vs-germany", "germany-vs-france",
+  "uk-vs-germany", "uae-vs-usa", "uae-vs-uk", "uk-vs-australia", "germany-vs-netherlands",
+  "canada-vs-australia", "japan-vs-uk",
+];
+
+function OtherComparisons({ currentPair }: { currentPair: string }) {
+  const others = POPULAR_PAIRS.filter((p) => p !== currentPair).slice(0, 12);
   return (
     <Card>
       <CardHeader>
