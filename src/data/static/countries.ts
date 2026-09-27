@@ -7,6 +7,7 @@ export interface StaticTaxBracket {
   lowerBound: number;
   upperBound: number | null;
   rate: number;
+  fixedAmount?: number | null; // for German-style "fixed + Y% over Z" formula
 }
 
 export interface StaticDeduction {
@@ -312,6 +313,172 @@ export const COUNTRIES: StaticCountry[] = [
     organization: "Federal Tax Authority",
     taxRule: null,
     salaryConfig: { year: 2025, employeeSocialRate: 0.05, employerSocialRate: 0.05, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // PORTUGAL — P8 in gap detector (NHR program, top expat destination)
+    code: "PT", slug: "portugal", name: "Portugal", region: "Europe",
+    defaultCurrency: "EUR", flagEmoji: "🇵🇹", taxSystem: "progressive",
+    description: "Portuguese IRS (Imposto sobre o Rendimento das Pessoas Singulares). 2025 mainland brackets. NHR program (20% flat for 10 years for qualifying expats) NOT modeled.",
+    sourceUrl: "https://www.portaldasfinancas.gov.pt/",
+    organization: "Autoridade Tributária",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 8059, rate: 0.145 },
+        { lowerBound: 8059, upperBound: 12160, rate: 0.21 },
+        { lowerBound: 12160, upperBound: 17233, rate: 0.265 },
+        { lowerBound: 17233, upperBound: 22306, rate: 0.285 },
+        { lowerBound: 22306, upperBound: 28400, rate: 0.35 },
+        { lowerBound: 28400, upperBound: 41107, rate: 0.37 },
+        { lowerBound: 41107, upperBound: 49818, rate: 0.435 },
+        { lowerBound: 49818, upperBound: 80782, rate: 0.45 },
+        { lowerBound: 80782, upperBound: null, rate: 0.48 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.11, employerSocialRate: 0.2375, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // INDIA — P7 in gap detector (huge user base, big search volume)
+    code: "IN", slug: "india", name: "India", region: "Asia",
+    defaultCurrency: "INR", flagEmoji: "🇮🇳", taxSystem: "progressive",
+    description: "Indian Income Tax (new regime FY 2025-26). Single filer below 60 years. Old regime not modeled.",
+    sourceUrl: "https://www.incometax.gov.in/",
+    organization: "Income Tax Department",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 300000, rate: 0 },
+        { lowerBound: 300000, upperBound: 700000, rate: 0.05 },
+        { lowerBound: 700000, upperBound: 1000000, rate: 0.10 },
+        { lowerBound: 1000000, upperBound: 1200000, rate: 0.15 },
+        { lowerBound: 1200000, upperBound: 1500000, rate: 0.20 },
+        { lowerBound: 1500000, upperBound: null, rate: 0.30 },
+      ],
+      deductions: [{ name: "Standard Deduction", type: "standard", amount: 75000 }],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.12, employerSocialRate: 0.12, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // BRAZIL — P6 in gap detector (largest LATAM economy)
+    code: "BR", slug: "brazil", name: "Brazil", region: "South America",
+    defaultCurrency: "BRL", flagEmoji: "🇧🇷", taxSystem: "progressive",
+    description: "Brazilian IRPF (Imposto de Renda Pessoa Física). 2025 monthly brackets (simplified to annual).",
+    sourceUrl: "https://www.gov.br/receitafederal/",
+    organization: "Receita Federal",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 28560, rate: 0 },
+        { lowerBound: 28560, upperBound: 57120, rate: 0.075 },
+        { lowerBound: 57120, upperBound: 85668, rate: 0.15 },
+        { lowerBound: 85668, upperBound: 171336, rate: 0.225 },
+        { lowerBound: 171336, upperBound: null, rate: 0.275 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.11, employerSocialRate: 0.20, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // MEXICO — P6 in gap detector (top expat destination)
+    code: "MX", slug: "mexico", name: "Mexico", region: "North America",
+    defaultCurrency: "MXN", flagEmoji: "🇲🇽", taxSystem: "progressive",
+    description: "Mexican ISR (Impuesto Sobre la Renta). 2025 annual brackets, single filer.",
+    sourceUrl: "https://www.sat.gob.mx/",
+    organization: "SAT (Servicio de Administración Tributaria)",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 8952, rate: 0.0192 },
+        { lowerBound: 8952, upperBound: 75984, rate: 0.064 },
+        { lowerBound: 75984, upperBound: 133536, rate: 0.1088 },
+        { lowerBound: 133536, upperBound: 155229, rate: 0.16 },
+        { lowerBound: 155229, upperBound: 185852, rate: 0.1792 },
+        { lowerBound: 185852, upperBound: 374837, rate: 0.2392 },
+        { lowerBound: 374837, upperBound: 590795, rate: 0.30 },
+        { lowerBound: 590795, upperBound: 1127927, rate: 0.32 },
+        { lowerBound: 1127927, upperBound: 1503903, rate: 0.34 },
+        { lowerBound: 1503903, upperBound: null, rate: 0.35 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.0288, employerSocialRate: 0.0687, socialCap: null, healthcareRate: 0.0168, healthcareCap: null },
+  },
+  {
+    // NEW ZEALAND — P5 in gap detector (English-speaking)
+    code: "NZ", slug: "new-zealand", name: "New Zealand", region: "Oceania",
+    defaultCurrency: "NZD", flagEmoji: "🇳🇿", taxSystem: "progressive",
+    description: "New Zealand income tax. 2025-26 brackets, single filer.",
+    sourceUrl: "https://www.ird.govt.nz/",
+    organization: "IRD (Inland Revenue)",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 14000, rate: 0.105 },
+        { lowerBound: 14000, upperBound: 48000, rate: 0.175 },
+        { lowerBound: 48000, upperBound: 70000, rate: 0.30 },
+        { lowerBound: 70000, upperBound: 180000, rate: 0.33 },
+        { lowerBound: 180000, upperBound: null, rate: 0.39 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0, employerSocialRate: 0, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // SWEDEN — P4 in gap detector (Nordic, high tax interest)
+    code: "SE", slug: "sweden", name: "Sweden", region: "Europe",
+    defaultCurrency: "SEK", flagEmoji: "🇸🇪", taxSystem: "progressive",
+    description: "Swedish inkomstskatt. 2025 national brackets (kommunalskatt not modeled — adds ~30%).",
+    sourceUrl: "https://www.skatteverket.se/",
+    organization: "Skatteverket",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 50400, rate: 0 },
+        { lowerBound: 50400, upperBound: 61300, rate: 0.20 },
+        { lowerBound: 61300, upperBound: null, rate: 0.20 }, // Simplified (real has marginalskatt)
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.07, employerSocialRate: 0.3142, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // NORWAY — P4 in gap detector (Nordic, high tax interest)
+    code: "NO", slug: "norway", name: "Norway", region: "Europe",
+    defaultCurrency: "NOK", flagEmoji: "🇳🇴", taxSystem: "progressive",
+    description: "Norwegian skatt. 2025 national brackets, single filer. Trinnskatt (step tax) + trygdeavgift (national insurance) not modeled separately.",
+    sourceUrl: "https://www.skatteetaten.no/",
+    organization: "Skatteetaten",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 208050, rate: 0 },
+        { lowerBound: 208050, upperBound: 292850, rate: 0.017 },
+        { lowerBound: 292850, upperBound: 670000, rate: 0.04 },
+        { lowerBound: 670000, upperBound: 937900, rate: 0.136 },
+        { lowerBound: 937900, upperBound: 1350000, rate: 0.166 },
+        { lowerBound: 1350000, upperBound: null, rate: 0.176 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0.078, employerSocialRate: 0.141, socialCap: null, healthcareRate: 0, healthcareCap: null },
+  },
+  {
+    // DENMARK — P4 in gap detector (Nordic, high tax interest)
+    code: "DK", slug: "denmark", name: "Denmark", region: "Europe",
+    defaultCurrency: "DKK", flagEmoji: "🇩🇰", taxSystem: "progressive",
+    description: "Danish bundskat (national tax). 2025 brackets, single. Kommuneskat (~25%) + health tax (~1%) NOT modeled — total effective is higher.",
+    sourceUrl: "https://skat.dk/",
+    organization: "Skatteforvaltningen",
+    taxRule: {
+      year: 2025, type: "income_tax",
+      brackets: [
+        { lowerBound: 0, upperBound: 58800, rate: 0.1212 },
+        { lowerBound: 58800, upperBound: null, rate: 0.15 },
+      ],
+      deductions: [],
+    },
+    salaryConfig: { year: 2025, employeeSocialRate: 0, employerSocialRate: 0.08, socialCap: null, healthcareRate: 0, healthcareCap: null },
   },
 ];
 

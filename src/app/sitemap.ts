@@ -27,8 +27,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${BASE}/tools/tax-calculator`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/salary-calculator`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/tools/scenario-builder`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tools/historical-trends`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/countries`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/compare`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE}/embed`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     ...countries.map((c) => ({
       url: `${BASE}/countries/${c.slug}`,
       lastModified: now,

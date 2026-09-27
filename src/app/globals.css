@@ -25,3 +25,14 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Embed mode: hide site chrome (header/footer/main padding) when embedded in iframe */
+body[data-embed="true"] header.site-header,
+body[data-embed="true"] footer.site-footer,
+body[data-embed="true"] > main {
+  display: contents;
+}
+body[data-embed="true"] > main > * {
+  margin: 0;
+  padding: 0;
+}

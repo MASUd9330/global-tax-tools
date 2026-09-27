@@ -7,6 +7,7 @@ import { Input, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelector } from "@/components/CountrySelector";
 import { StateSelector } from "@/components/StateSelector";
+import { AiExplainer } from "@/components/AiExplainer";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
 
 interface TaxBreakdownItem {
@@ -217,6 +218,13 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
               </CardContent>
             </Card>
           )}
+
+          {/* AI Explanation */}
+          <AiExplainer
+            country={country}
+            state={country === "US" && state ? state : undefined}
+            income={incomeNum}
+          />
 
           <p className="text-xs text-slate-500">
             Sources:{" "}

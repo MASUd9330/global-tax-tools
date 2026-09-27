@@ -10,6 +10,21 @@ import { ArrowRight, Globe2, ShieldCheck, Zap } from "lucide-react";
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
+function ToolCard({ href, title, description }: { href: string; title: string; description: string }) {
+  return (
+    <Link href={href}>
+      <Card className="h-full transition-shadow hover:shadow-md">
+        <CardHeader>
+          <CardTitle className="text-base">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-600">{description}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 export default async function HomePage() {
   const countries = await listCountries();
   const usStates = await listStatesForCountry("US");
@@ -54,6 +69,43 @@ export default async function HomePage() {
       {/* Calculator */}
       <section>
         <TaxCalculator initialCountry="US" initialIncome={75000} />
+      </section>
+
+      {/* Tools grid */}
+      <section>
+        <h2 className="text-2xl font-semibold text-slate-900">Tools</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ToolCard
+            href="/tools/tax-calculator/"
+            title="Income Tax"
+            description="Single country, brackets + deductions"
+          />
+          <ToolCard
+            href="/tools/salary-calculator/"
+            title="Salary (take-home)"
+            description="Net pay with social / health contributions"
+          />
+          <ToolCard
+            href="/tools/scenario-builder/"
+            title="Scenario Builder"
+            description="Compare 2-4 countries / states at one salary"
+          />
+          <ToolCard
+            href="/tools/historical-trends/"
+            title="Historical Trends"
+            description="2024 vs 2025 year-over-year comparison"
+          />
+          <ToolCard
+            href="/compare/"
+            title="Compare Countries"
+            description="Side-by-side comparison matrix"
+          />
+          <ToolCard
+            href="/embed/"
+            title="Embed Widget"
+            description="Drop the calculator on your site (free)"
+          />
+        </div>
       </section>
 
       {/* Country grid */}
