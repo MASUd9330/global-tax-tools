@@ -8,6 +8,7 @@ const TOOLS = [
   { href: "/tools/historical-trends/", label: "Historical Trends" },
   { href: "/compare/", label: "Compare Countries" },
   { href: "/embed/", label: "Embed Widget" },
+  { href: "/pro/", label: "Pro API" },
 ];
 
 export function SiteHeader() {

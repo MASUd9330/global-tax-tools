@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   checkRateLimit,
   getClientIdentifier,
-  isValidApiKey,
+  getPlanForRequest,
   rateLimitHeaders,
   rateLimitResponse,
 } from "./rate-limit";
@@ -23,16 +23,16 @@ export function withRateLimit(handler: Handler, options?: { skip?: boolean }): H
     if (options?.skip) return handler(req);
 
     const id = getClientIdentifier(req);
-    const hasKey = isValidApiKey(req);
-    const rl = checkRateLimit(id, hasKey);
+    const plan = getPlanForRequest(req);
+    const rl = checkRateLimit(id, plan);
 
     if (!rl.allowed) {
       return rateLimitResponse(rl);
     }
 
     const res = await handler(req);
-    // Attach rate-limit headers to successful responses
     const headers = rateLimitHeaders(rl);
+    headers["X-RateLimit-Plan"] = plan;
     for (const [k, v] of Object.entries(headers)) {
       res.headers.set(k, v);
     }

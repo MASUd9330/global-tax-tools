@@ -4,7 +4,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { checkRateLimit, getClientIdentifier, isValidApiKey, rateLimitHeaders } from "../src/lib/api/rate-limit";
+import { checkRateLimit, getClientIdentifier, getProKey, rateLimitHeaders } from "../src/lib/api/rate-limit";
 
 describe("rate-limit — checkRateLimit", () => {
   test("first request is allowed", () => {
@@ -30,11 +30,11 @@ describe("rate-limit — checkRateLimit", () => {
     assert.equal(rl.allowed, false);
   });
 
-  test("API key gets higher limits", () => {
+  test("Pro API key gets higher limits", () => {
     const id = "test-key-" + Date.now();
-    const rl = checkRateLimit(id, true);
+    const rl = checkRateLimit(id, "pro");
     assert.equal(rl.allowed, true);
-    assert.equal(rl.limit.minute, 1000); // KEYED_LIMITS
+    assert.equal(rl.limit.minute, 1000); // PRO_LIMITS
   });
 
   test("different identifiers have separate buckets", () => {
@@ -105,32 +105,35 @@ describe("rate-limit — getClientIdentifier", () => {
   });
 });
 
-describe("rate-limit — isValidApiKey", () => {
-  test("returns false when env var not set", () => {
-    const prev = process.env.TR_PRO_KEY;
-    delete process.env.TR_PRO_KEY;
+describe("rate-limit — getProKey", () => {
+  test("returns null when no PRO_KEYS env var", () => {
+    const prev = process.env.PRO_KEYS;
+    delete process.env.PRO_KEYS;
     const req = new Request("https://test/", {
       headers: { authorization: "Bearer anything" },
     });
-    assert.equal(isValidApiKey(req as any), false);
-    if (prev) process.env.TR_PRO_KEY = prev;
+    assert.equal(getProKey(req as any), null);
+    if (prev) process.env.PRO_KEYS = prev;
   });
 
-  test("returns true with matching bearer token", () => {
-    process.env.TR_PRO_KEY = "test-secret-123";
+  test("returns ProKey with matching bearer token", () => {
+    process.env.PRO_KEYS = "tr_test_abc|pro|user@example.com";
     const req = new Request("https://test/", {
-      headers: { authorization: "Bearer test-secret-123" },
+      headers: { authorization: "Bearer tr_test_abc" },
     });
-    assert.equal(isValidApiKey(req as any), true);
-    delete process.env.TR_PRO_KEY;
+    const pro = getProKey(req as any);
+    assert.ok(pro);
+    assert.equal(pro!.plan, "pro");
+    assert.equal(pro!.ownerEmail, "user@example.com");
+    delete process.env.PRO_KEYS;
   });
 
-  test("returns false with mismatched key", () => {
-    process.env.TR_PRO_KEY = "correct-key";
+  test("returns null with mismatched key", () => {
+    process.env.PRO_KEYS = "tr_correct|pro|user@example.com";
     const req = new Request("https://test/", {
       headers: { authorization: "Bearer wrong-key" },
     });
-    assert.equal(isValidApiKey(req as any), false);
-    delete process.env.TR_PRO_KEY;
+    assert.equal(getProKey(req as any), null);
+    delete process.env.PRO_KEYS;
   });
 });

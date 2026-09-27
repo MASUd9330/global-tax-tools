@@ -19,6 +19,7 @@
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { validateProKey, planFromProKey, type Plan, PLAN_LIMITS } from "./pro-keys";
 
 interface Bucket {
   tokens: number;
@@ -63,12 +64,12 @@ interface RateLimit {
   limit: { minute: number; hour: number; day: number };
 }
 
-const FREE_LIMITS = { minute: 60, hour: 1000, day: 10000 };
-const KEYED_LIMITS = { minute: 1000, hour: 50000, day: 200000 };
+const FREE_LIMITS = PLAN_LIMITS.free;
+const KEYED_LIMITS = PLAN_LIMITS.pro;
 
-export function checkRateLimit(identifier: string, isApiKey: boolean = false): RateLimit {
+export function checkRateLimit(identifier: string, plan: Plan = "free"): RateLimit {
   const now = Date.now();
-  const limits = isApiKey ? KEYED_LIMITS : FREE_LIMITS;
+  const limits = plan === "free" ? FREE_LIMITS : PLAN_LIMITS[plan];
   const MINUTE = 60 * 1000;
   const HOUR = 60 * MINUTE;
   const DAY = 24 * HOUR;
@@ -162,18 +163,18 @@ export function rateLimitResponse(rl: RateLimit): NextResponse {
   );
 }
 
-// Helper: extract API key from request + validate
-export function isValidApiKey(req: NextRequest): boolean {
-  const expected = process.env.TR_PRO_KEY;
-  if (!expected) return false; // Feature disabled
-
+// Helper: extract API key from request + validate against Pro allowlist
+export function getProKey(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
-  if (authHeader?.startsWith("Bearer ") && authHeader.slice(7) === expected) {
-    return true;
+  let raw: string | null = null;
+  if (authHeader?.startsWith("Bearer ")) {
+    raw = authHeader.slice(7);
+  } else {
+    raw = req.headers.get("x-api-key");
   }
-  const apiKey = req.headers.get("x-api-key");
-  if (apiKey && apiKey === expected) {
-    return true;
-  }
-  return false;
+  return validateProKey(raw);
+}
+
+export function getPlanForRequest(req: NextRequest): Plan {
+  return planFromProKey(getProKey(req));
 }
