@@ -9,6 +9,7 @@ import {
   getSalaryConfig,
   getLatestTaxYear,
 } from "@/lib/data/country";
+import { withRateLimit } from "@/lib/api/with-rate-limit";
 
 const BodySchema = z.object({
   country: z.string().min(2).max(3),
@@ -16,7 +17,7 @@ const BodySchema = z.object({
   year: z.number().int().min(2000).max(2100).optional(),
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(async (req: NextRequest) => {
   let body: unknown;
   try {
     body = await req.json();
@@ -82,4 +83,4 @@ export async function POST(req: NextRequest) {
     },
     result,
   });
-}
+});

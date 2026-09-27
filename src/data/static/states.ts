@@ -138,7 +138,7 @@ export const US_STATES: StaticState[] = [
   },
   {
     code: "WA", slug: "washington", name: "Washington", hasIncomeTax: false, taxType: "none",
-    standardDeduction: 0, topMarginalRate: 0.07,
+    standardDeduction: 0, topMarginalRate: null,
     description: "Washington has no state wage income tax. Capital gains tax 7% applies to long-term gains over $262,000 (2025).",
     sourceUrl: "https://dor.wa.gov/", brackets: [],
   },
@@ -275,11 +275,14 @@ export const US_STATES: StaticState[] = [
     brackets: [{ lowerBound: 0, upperBound: null, rate: 0.025 }],
   },
   {
-    code: "MA", slug: "massachusetts", name: "Massachusetts", hasIncomeTax: true, taxType: "flat",
+    code: "MA", slug: "massachusetts", name: "Massachusetts", hasIncomeTax: true, taxType: "progressive",
     standardDeduction: 0, topMarginalRate: 0.09,
     description: "Massachusetts personal income tax. Flat 5% + 4% millionaire surtax on income over $1.08M.",
     sourceUrl: "https://www.mass.gov/dor",
-    brackets: [{ lowerBound: 0, upperBound: null, rate: 0.05 }],
+    brackets: [
+      { lowerBound: 0, upperBound: 1083150, rate: 0.05 },
+      { lowerBound: 1083150, upperBound: null, rate: 0.09 },
+    ],
   },
   {
     code: "IN", slug: "indiana", name: "Indiana", hasIncomeTax: true, taxType: "flat",

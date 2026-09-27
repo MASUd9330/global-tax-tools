@@ -6,6 +6,7 @@ import { z } from "zod";
 import { calculateProgressiveTax } from "@/lib/calc/tax";
 import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";
 import { getStateTaxData } from "@/lib/data/state";
+import { withRateLimit } from "@/lib/api/with-rate-limit";
 
 const BodySchema = z.object({
   country: z.string().min(2).max(3), // "US" or "usa"
@@ -15,7 +16,7 @@ const BodySchema = z.object({
   taxType: z.string().default("income_tax"),
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(async (req: NextRequest) => {
   let body: unknown;
   try {
     body = await req.json();
@@ -131,4 +132,4 @@ export async function POST(req: NextRequest) {
       netIncome: income - combinedTotalTax,
     },
   });
-}
+});

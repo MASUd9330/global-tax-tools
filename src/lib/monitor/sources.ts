@@ -58,9 +58,10 @@ export const MONITORED_SOURCES: MonitoredSource[] = (() => {
 })();
 
 function priorityFor(code: string): 1 | 2 | 3 {
-  const g7 = new Set(["US", "GB", "DE", "FR", "CA", "IT", "JP"]);
+  // G7: US, GB (=UK in our data), DE, FR, CA, IT, JP
+  const g7 = new Set(["US", "UK", "GB", "DE", "FR", "CA", "IT", "JP"]);
   if (g7.has(code)) return 1;
-  if (["AU", "ES", "NL", "IE", "CH", "SG", "AE"].includes(code)) return 2;
+  if (["AU", "ES", "NL", "IE", "CH", "SG", "AE", "PT"].includes(code)) return 2;
   return 3;
 }
 
