@@ -1,10 +1,11 @@
 /**
- * Data access layer for tax rules.
- * Loads published tax rules for a given country + year from the DB.
- * Pure functions that return plain objects (no Prisma types leaking).
+ * Country data layer — STATIC (no DB queries).
+ * Reads from `src/data/static/countries.ts`.
  */
-import { prisma } from "@/lib/db";
-import type { TaxBracket, TaxDeduction } from "@/lib/calc/tax";
+
+import { COUNTRIES, COUNTRIES_BY_CODE, COUNTRIES_BY_SLUG, type StaticCountry, type StaticTaxBracket, type StaticDeduction } from "@/data/static/countries";
+
+export type { StaticTaxBracket, StaticDeduction };
 
 export interface CountrySummary {
   code: string;
@@ -21,8 +22,8 @@ export interface CountryTaxData {
   country: CountrySummary;
   year: number;
   taxType: string;
-  brackets: TaxBracket[];
-  deductions: TaxDeduction[];
+  brackets: StaticTaxBracket[];
+  deductions: StaticDeduction[];
   sourceUrl: string | null;
   notes: string | null;
   lastUpdated: Date;
@@ -37,123 +38,77 @@ export interface SalaryConfigData {
   notes: string | null;
 }
 
-/** List all countries (lightweight, for nav/selector) */
-export async function listCountries(): Promise<CountrySummary[]> {
-  const rows = await prisma.country.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      code: true,
-      slug: true,
-      name: true,
-      region: true,
-      defaultCurrency: true,
-      flagEmoji: true,
-      taxSystem: true,
-      description: true,
-    },
-  });
-  return rows;
+function toSummary(c: StaticCountry): CountrySummary {
+  return {
+    code: c.code,
+    slug: c.slug,
+    name: c.name,
+    region: c.region,
+    defaultCurrency: c.defaultCurrency,
+    flagEmoji: c.flagEmoji,
+    taxSystem: c.taxSystem,
+    description: c.description,
+  };
 }
 
-/** Get country by code or slug */
-export async function getCountry(identifier: string): Promise<CountrySummary | null> {
-  const row = await prisma.country.findFirst({
-    where: {
-      OR: [{ code: identifier.toUpperCase() }, { slug: identifier.toLowerCase() }],
-    },
-    select: {
-      code: true,
-      slug: true,
-      name: true,
-      region: true,
-      defaultCurrency: true,
-      flagEmoji: true,
-      taxSystem: true,
-      description: true,
-    },
-  });
-  return row;
+export function listCountries(): CountrySummary[] {
+  return [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name)).map(toSummary);
 }
 
-/** Get latest published tax rule for a country + year */
-export async function getCountryTaxData(
+export function getCountry(identifier: string): CountrySummary | null {
+  const upper = identifier.toUpperCase();
+  const lower = identifier.toLowerCase();
+  return COUNTRIES_BY_CODE[upper] || COUNTRIES_BY_SLUG[lower]
+    ? toSummary(COUNTRIES_BY_CODE[upper] || COUNTRIES_BY_SLUG[lower])
+    : null;
+}
+
+export function getCountryTaxData(
   identifier: string,
   year: number,
   taxType = "income_tax"
-): Promise<CountryTaxData | null> {
-  const country = await getCountry(identifier);
-  if (!country) return null;
-
-  const rule = await prisma.taxRule.findFirst({
-    where: {
-      country: { OR: [{ code: identifier.toUpperCase() }, { slug: identifier.toLowerCase() }] },
-      year,
-      type: taxType,
-      status: "published",
-    },
-    orderBy: { version: "desc" },
-    include: {
-      brackets: { orderBy: { orderIndex: "asc" } },
-      deductions: true,
-    },
-  });
-
-  if (!rule) return null;
+): CountryTaxData | null {
+  const upper = identifier.toUpperCase();
+  const lower = identifier.toLowerCase();
+  const c = COUNTRIES_BY_CODE[upper] || COUNTRIES_BY_SLUG[lower];
+  if (!c || c.taxSystem === "none" || !c.taxRule) return null;
+  if (c.taxRule.year !== year) return null;
+  if (c.taxRule.type !== taxType) return null;
 
   return {
-    country,
-    year,
-    taxType,
-    brackets: rule.brackets.map((b) => ({
-      lowerBound: b.lowerBound,
-      upperBound: b.upperBound,
-      rate: b.rate,
-      fixedAmount: b.fixedAmount,
-    })),
-    deductions: rule.deductions.map((d) => ({
-      name: d.name,
-      type: d.type,
-      amount: d.amount,
-      percentage: d.percentage,
-      conditions: d.conditions ? JSON.parse(d.conditions) : null,
-    })),
-    sourceUrl: rule.sourceUrl,
-    notes: rule.notes,
-    lastUpdated: rule.publishedAt || rule.updatedAt,
+    country: toSummary(c),
+    year: c.taxRule.year,
+    taxType: c.taxRule.type,
+    brackets: c.taxRule.brackets,
+    deductions: c.taxRule.deductions,
+    sourceUrl: c.sourceUrl,
+    notes: c.description,
+    lastUpdated: new Date(),
   };
 }
 
-/** Get salary config for a country + year */
-export async function getSalaryConfig(
-  identifier: string,
-  year: number
-): Promise<SalaryConfigData | null> {
-  const row = await prisma.salaryConfig.findFirst({
-    where: {
-      country: { OR: [{ code: identifier.toUpperCase() }, { slug: identifier.toLowerCase() }] },
-      year,
-    },
-  });
-  if (!row) return null;
+export function getSalaryConfig(identifier: string, _year: number): SalaryConfigData | null {
+  const upper = identifier.toUpperCase();
+  const lower = identifier.toLowerCase();
+  const c = COUNTRIES_BY_CODE[upper] || COUNTRIES_BY_SLUG[lower];
+  if (!c || !c.salaryConfig) return null;
   return {
-    employeeSocialRate: row.employeeSocialRate,
-    employerSocialRate: row.employerSocialRate,
-    socialCap: row.socialCap,
-    healthcareRate: row.healthcareRate ?? 0,
-    healthcareCap: row.healthcareCap,
-    notes: row.notes,
+    employeeSocialRate: c.salaryConfig.employeeSocialRate,
+    employerSocialRate: c.salaryConfig.employerSocialRate,
+    socialCap: c.salaryConfig.socialCap,
+    healthcareRate: c.salaryConfig.healthcareRate,
+    healthcareCap: c.salaryConfig.healthcareCap,
+    notes: null,
   };
 }
 
-/** Get latest available tax year for a country */
-export async function getLatestTaxYear(identifier: string): Promise<number | null> {
-  const row = await prisma.taxRule.findFirst({
-    where: {
-      country: { OR: [{ code: identifier.toUpperCase() }, { slug: identifier.toLowerCase() }] },
-      status: "published",
-    },
-    orderBy: { year: "desc" },
-    select: { year: true },
-  });
-  return row?.year ?? null;
+export function getLatestTaxYear(_identifier: string): number | null {
+  // Static data only has 2025 — return that
+  return 2025;
+}
+
+export function getCountryRaw(identifier: string): StaticCountry | null {
+  const upper = identifier.toUpperCase();
+  const lower = identifier.toLowerCase();
+  return COUNTRIES_BY_CODE[upper] || COUNTRIES_BY_SLUG[lower] || null;
 }

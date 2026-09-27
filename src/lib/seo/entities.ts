@@ -2,7 +2,8 @@
  * Entity Graph.
  * Extracts entities (countries, states, currencies, regions) and their relationships.
  */
-import { prisma } from "@/lib/db";
+import { listCountries } from "@/lib/data/country";
+import { US_STATES, US_STATES_BY_CODE } from "@/data/static/states";
 
 export interface EntityGraph {
   entities: Array<{
@@ -25,8 +26,8 @@ export interface EntityGraph {
 }
 
 export async function getEntityGraph(): Promise<EntityGraph> {
-  const countries = await prisma.country.findMany({ orderBy: { name: "asc" } });
-  const states = await prisma.state.findMany({ orderBy: { name: "asc" } });
+  const countries = listCountries();
+  const states = US_STATES;
 
   const entities: EntityGraph["entities"] = [];
   const relationships: EntityGraph["relationships"] = [];
@@ -66,14 +67,8 @@ export async function getEntityGraph(): Promise<EntityGraph> {
 
   // States (US only)
   for (const s of states) {
-    const parentCountry = await prisma.state.findUnique({
-      where: { id: s.id },
-      include: { country: { select: { code: true } } },
-    });
     addEntity(`state:${s.code}`, "state", s.name, s.slug, s.code);
-    if (parentCountry) {
-      addRel(`state:${s.code}`, `country:${parentCountry.country.code}`, "in_country");
-    }
+    addRel(`state:${s.code}`, `country:US`, "in_country");
   }
 
   return {

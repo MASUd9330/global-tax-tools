@@ -2,7 +2,8 @@
  * Content Gap Detector.
  * Identifies missing page combinations that should exist for SEO coverage.
  */
-import { prisma } from "@/lib/db";
+import { listCountries } from "@/lib/data/country";
+import { US_STATES } from "@/data/static/states";
 
 export interface ContentGap {
   type: "missing-country" | "missing-state" | "missing-province" | "missing-region";
@@ -93,9 +94,9 @@ export async function detectContentGaps(): Promise<{
   byType: Record<string, number>;
 }> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const existing = await prisma.country.findMany();
+  const existing = listCountries();
   const existingSlugs = new Set(existing.map((c) => c.slug));
-  const existingStates = await prisma.state.findMany();
+  const existingStates = US_STATES;
   const existingStateCodes = new Set(existingStates.map((s) => s.code));
 
   const gaps: ContentGap[] = [];

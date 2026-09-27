@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       const stateDeductions: { name: string; type: string; amount: number }[] = stateInfo.standardDeduction > 0
         ? [{ name: `${stateInfo.state.name} Standard Deduction`, type: "standard", amount: stateInfo.standardDeduction }]
         : [];
+      // State brackets already in lowerBound/upperBound format
       stateResult = calculateProgressiveTax(income, stateInfo.brackets, stateDeductions);
     }
   }

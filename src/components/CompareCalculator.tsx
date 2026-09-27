@@ -15,7 +15,7 @@ interface SideResult {
   totalTax: number;
   effectiveRate: number;
   marginalRate: number;
-  brackets: Array<{ lower: number; upper: number | null; rate: number }>;
+  brackets: Array<{ lowerBound: number; upperBound: number | null; rate: number }>;
   currency: string;
   noTax: boolean;
 }
@@ -206,7 +206,7 @@ function Bar({ label, value, maxValue, color }: { label: string; value: number; 
   );
 }
 
-function BracketCard({ name, brackets, noTax, currency }: { name: string; brackets: Array<{ lower: number; upper: number | null; rate: number }>; noTax: boolean; currency: string }) {
+function BracketCard({ name, brackets, noTax, currency }: { name: string; brackets: Array<{ lowerBound: number; upperBound: number | null; rate: number }>; noTax: boolean; currency: string }) {
   return (
     <Card>
       <CardHeader>
@@ -231,7 +231,7 @@ function BracketCard({ name, brackets, noTax, currency }: { name: string; bracke
               {brackets.map((b, i) => (
                 <tr key={i} className="border-b border-slate-100">
                   <td className="py-1.5 tabular-nums">
-                    {formatCurrency(b.lower, currency)} – {b.upper === null ? "∞" : formatCurrency(b.upper, currency)}
+                    {formatCurrency(b.lowerBound, currency)} – {b.upperBound === null ? "∞" : formatCurrency(b.upperBound, currency)}
                   </td>
                   <td className="py-1.5 text-right tabular-nums font-medium">{formatPercent(b.rate, 0)}</td>
                 </tr>

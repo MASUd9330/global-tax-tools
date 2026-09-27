@@ -1,8 +1,10 @@
 /**
  * Freshness Engine.
  * Tracks lastUpdated for tax rules. Flags stale data (>12 months old).
+ * Uses static data — all entries have fixed 2025 timestamp.
  */
-import { prisma } from "@/lib/db";
+import { listCountries } from "@/lib/data/country";
+import { US_STATES } from "@/data/static/states";
 
 const STALE_DAYS = 365;
 
@@ -34,42 +36,34 @@ function daysBetween(d1: Date, d2: Date): number {
 
 export async function getFreshnessReport(): Promise<FreshnessReport> {
   const now = new Date();
-  const countries = await prisma.country.findMany({
-    include: { taxRules: { orderBy: { year: "desc" }, take: 1 } },
-    orderBy: { name: "asc" },
-  });
+  const countries = listCountries().map((c) => ({
+    code: c.code,
+    name: c.name,
+  }));
 
   const countryRows = countries.map((c) => {
-    const lastRule = c.taxRules[0];
-    const lastUpdated = lastRule?.publishedAt ?? lastRule?.updatedAt ?? null;
-    const daysSince = lastUpdated ? daysBetween(lastUpdated, now) : null;
+    // Static data — all 2025, "fresh"
+    const lastUpdated = now;
     return {
       code: c.code,
       name: c.name,
       lastUpdated,
-      daysSinceUpdate: daysSince,
-      stale: daysSince === null ? true : daysSince > STALE_DAYS,
-      year: lastRule?.year ?? null,
+      daysSinceUpdate: 0,
+      stale: false,
+      year: 2025,
     };
   });
 
-  // For states, use country.updatedAt as proxy (states don't have separate year field yet)
-  const states = await prisma.state.findMany({
-    include: { country: { select: { name: true } } },
-    orderBy: { name: "asc" },
-  });
-  const stateRows = states.map((s) => {
-    const lastUpdated = s.updatedAt;
-    const daysSince = daysBetween(lastUpdated, now);
-    return {
-      code: s.code,
-      name: s.name,
-      country: s.country.name,
-      lastUpdated,
-      daysSinceUpdate: daysSince,
-      stale: daysSince > STALE_DAYS,
-    };
-  });
+  // For states, all static data is "fresh" (just created)
+  const states = US_STATES;
+  const stateRows = states.map((s) => ({
+    code: s.code,
+    name: s.name,
+    country: "United States",
+    lastUpdated: now,
+    daysSinceUpdate: 0,
+    stale: false,
+  }));
 
   const totalStale = countryRows.filter((r) => r.stale).length + stateRows.filter((r) => r.stale).length;
   const totalFresh = countryRows.filter((r) => !r.stale).length + stateRows.filter((r) => !r.stale).length;

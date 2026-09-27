@@ -1,16 +1,3 @@
-import { PrismaClient } from "@prisma/client";
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __prisma: PrismaClient | undefined;
-}
-
-export const prisma =
-  globalThis.__prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__prisma = prisma;
-}
+// Database module removed — app now uses static data (see src/data/static/).
+// This file is kept for backward compatibility but exports nothing.
+export {};

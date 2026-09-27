@@ -2,7 +2,8 @@
  * Cannibalization Detector.
  * Finds pages that compete for the same keyword (heuristic — URL/title keyword overlap).
  */
-import { prisma } from "@/lib/db";
+import { listCountries } from "@/lib/data/country";
+import { listStatesForCountry } from "@/lib/data/state";
 
 export interface CannibalizationIssue {
   keyword: string;
@@ -20,8 +21,8 @@ const KEYWORD_FAMILIES: Record<string, string[]> = {
 
 export async function detectCannibalization(): Promise<CannibalizationIssue[]> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const countries = await prisma.country.findMany();
-  const states = await prisma.state.findMany({ where: { country: { code: "US" } } });
+  const countries = listCountries();
+  const states = listStatesForCountry("US");
 
   const allPages: Array<{ url: string; title: string; keywords: Set<string> }> = [];
 

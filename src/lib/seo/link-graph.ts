@@ -3,7 +3,8 @@
  * Maps every page's outbound links based on template + data.
  * Identifies orphans (no inbound), hubs (most outbound), and link opportunities.
  */
-import { prisma } from "@/lib/db";
+import { listCountries } from "@/lib/data/country";
+import { listStatesForCountry } from "@/lib/data/state";
 
 export interface PageNode {
   url: string;
@@ -24,8 +25,8 @@ export interface LinkGraph {
 
 export async function getInternalLinkGraph(): Promise<LinkGraph> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const countries = await prisma.country.findMany({ orderBy: { name: "asc" } });
-  const states = await prisma.state.findMany({ orderBy: { name: "asc" } });
+  const countries = listCountries();
+  const states = listStatesForCountry("US");
 
   const nodes: PageNode[] = [];
   const inboundCount = new Map<string, number>();

@@ -2,9 +2,8 @@
  * Comparison data layer.
  * Resolves a "X-vs-Y" pair into two tax entities (country or state) and their rules.
  */
-import { prisma } from "@/lib/db";
-import { getCountryTaxData, getCountry } from "@/lib/data/country";
-import { getStateTaxData } from "@/lib/data/state";
+import { getCountryTaxData, getCountry, listCountries } from "@/lib/data/country";
+import { getStateTaxData, getState } from "@/lib/data/state";
 
 export type SideType = "country" | "state";
 
@@ -32,19 +31,14 @@ async function resolveOne(slugOrCode: string): Promise<ComparisonSide | null> {
     };
   }
   // Try state (only US for now)
-  const state = await prisma.state.findFirst({
-    where: {
-      OR: [{ code: slugOrCode.toUpperCase() }, { slug: slugOrCode.toLowerCase() }],
-    },
-    include: { country: { select: { code: true, name: true } } },
-  });
+  const state = getState("US", slugOrCode);
   if (state) {
     return {
-      type: "state",
+      type: "state" as const,
       slug: state.slug,
       name: state.name,
-      countryCode: state.country.code,
-      countryName: state.country.name,
+      countryCode: state.countryCode,
+      countryName: state.countryName,
     };
   }
   return null;
@@ -80,7 +74,7 @@ export async function calculateForSide(
   totalTax: number;
   effectiveRate: number;
   marginalRate: number;
-  brackets: Array<{ lower: number; upper: number | null; rate: number }>;
+  brackets: Array<{ lowerBound: number; upperBound: number | null; rate: number }>;
   currency: string;
   noTax: boolean;
   breakdown?: { federal: number; state: number };
@@ -113,7 +107,7 @@ export async function calculateForSide(
       totalTax: result.totalTax,
       effectiveRate: result.effectiveRate,
       marginalRate: result.marginalRate,
-      brackets: taxData.brackets.map((b) => ({ lower: b.lowerBound, upper: b.upperBound, rate: b.rate })),
+      brackets: taxData.brackets,
       currency: country.defaultCurrency,
       noTax: false,
       breakdown: { federal: result.totalTax, state: 0 },
@@ -137,7 +131,7 @@ export async function calculateForSide(
       totalTax: fedResult.totalTax,
       effectiveRate: fedResult.effectiveRate,
       marginalRate: fedResult.marginalRate,
-      brackets: federalData.brackets.map((b) => ({ lower: b.lowerBound, upper: b.upperBound, rate: b.rate })),
+      brackets: federalData.brackets,
       currency: "USD",
       noTax: false, // federal still applies
       breakdown: { federal: fedResult.totalTax, state: 0 },
@@ -160,7 +154,7 @@ export async function calculateForSide(
     totalTax: fedResult.totalTax + stateResult.totalTax,
     effectiveRate: (fedResult.totalTax + stateResult.totalTax) / Math.max(income, 1),
     marginalRate: Math.max(fedResult.marginalRate, stateResult.marginalRate),
-    brackets: data.brackets.map((b) => ({ lower: b.lowerBound, upper: b.upperBound, rate: b.rate })),
+    brackets: data.brackets,
     currency: "USD",
     noTax: false,
     breakdown: { federal: fedResult.totalTax, state: stateResult.totalTax },
@@ -169,8 +163,8 @@ export async function calculateForSide(
 
 /** Get a curated list of popular comparisons */
 export async function getPopularComparisons(): Promise<string[]> {
-  const countries = await prisma.country.findMany({ select: { slug: true } });
-  const countrySlugs = countries.map((c) => c.slug);
+  const countries = listCountries();
+  const countrySlugs = new Set(countries.map((c) => c.slug));
 
   const popularPairs: string[] = [
     // US state vs state (popular, no-tax vs high-tax)
@@ -210,7 +204,7 @@ export async function getPopularComparisons(): Promise<string[]> {
   const valid: string[] = [];
   for (const pair of popularPairs) {
     const [a, b] = pair.split("-vs-");
-    if (countrySlugs.includes(a) || countrySlugs.includes(b)) {
+    if (countrySlugs.has(a) || countrySlugs.has(b)) {
       // Resolve more flexibly (handles states too)
       const resolved = await parseComparison(pair);
       if (resolved) valid.push(pair);
