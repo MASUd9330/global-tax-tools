@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Zap, Crown, Users, ArrowRight, Copy, Mail } from "lucide-react";
+import { Check, Zap, Crown, Users, ArrowRight, Mail } from "lucide-react";
 import { PLAN_PRICING } from "@/lib/api/pro-keys";
+import { CopyButton } from "@/components/CopyButton";
 
 export const metadata: Metadata = {
   title: "Pro Plans — Higher API Limits + Embed Without Attribution",
@@ -284,14 +285,7 @@ function CopyField({ value }: { value: string }) {
       <code className="flex-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-800 break-all">
         {value}
       </code>
-      <button
-        type="button"
-        onClick={() => navigator.clipboard?.writeText(value)}
-        className="rounded-md border border-slate-200 bg-white px-3 text-slate-500 hover:bg-slate-50"
-        title="Copy"
-      >
-        <Copy className="h-4 w-4" />
-      </button>
+      <CopyButton value={value} />
     </div>
   );
 }
