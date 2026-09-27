@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelector } from "@/components/CountrySelector";
 import { StateSelector } from "@/components/StateSelector";
 import { AiExplainer } from "@/components/AiExplainer";
+import { BracketVisualization } from "@/components/BracketVisualization";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
 
 interface TaxBreakdownItem {
@@ -186,6 +187,13 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
               )}
             </CardContent>
           </Card>
+
+          {/* Visual bracket breakdown */}
+          <BracketVisualization
+            income={data.result.grossIncome}
+            currency={currency}
+            breakdown={data.result.federal.breakdown}
+          />
 
           {/* Federal breakdown */}
           <Card>

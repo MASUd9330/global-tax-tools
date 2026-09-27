@@ -6,7 +6,6 @@ import { getState, getStateTaxData, listStatesForCountry } from "@/lib/data/stat
 import { getCountry } from "@/lib/data/country";
 import { TaxCalculator } from "@/components/TaxCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { JsonLd, breadcrumbLd, softwareApplicationLd } from "@/components/JsonLd";
 
@@ -64,21 +63,57 @@ export default async function StateHubPage({ params }: PageProps) {
       </nav>
 
       {/* Hero */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {state.name} Income Tax Calculator
-        </h1>
-        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-          <Badge>{state.code}</Badge>
-          <Badge>{state.taxType === "none" ? "No state income tax" : state.taxType}</Badge>
-          {state.topMarginalRate !== null && (
-            <Badge>top {formatPercent(state.topMarginalRate, 1)}</Badge>
-          )}
-          <Badge>combined with federal</Badge>
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-emerald-50/30 to-white p-6 md:p-8">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-emerald-100/40 blur-3xl" />
+        <div className="relative">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white text-xl font-bold shadow-md">
+              {state.code}
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-slate-900">{state.name} Income Tax Calculator</h1>
+              <p className="mt-1 text-sm text-slate-600">
+                United States · {state.taxType === "none" ? "No state income tax" : `${state.taxType} tax`}
+                {state.topMarginalRate !== null && ` · top marginal ${formatPercent(state.topMarginalRate, 2)}`}
+              </p>
+              {state.description && (
+                <p className="mt-3 max-w-3xl text-slate-700 leading-relaxed">{state.description}</p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                {state.taxType === "none" ? (
+                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-emerald-700 font-medium">
+                    ✓ No state income tax — keep 100% of federal take-home
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-amber-700 font-medium">
+                    Adds to federal tax
+                  </span>
+                )}
+                {taxData.standardDeduction > 0 && (
+                  <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-slate-700 font-medium">
+                    Standard deduction {formatCurrency(taxData.standardDeduction, country.defaultCurrency)}
+                  </span>
+                )}
+                {taxData.sourceUrl && (
+                  <a
+                    href={taxData.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-slate-700 font-medium hover:bg-slate-200"
+                  >
+                    State DOR ↗
+                  </a>
+                )}
+                <Link
+                  href={`/embed/US?state=${state.slug}&income=75000`}
+                  className="inline-flex items-center rounded-md bg-blue-600 px-2.5 py-1 text-white font-medium hover:bg-blue-700"
+                >
+                  Embed widget
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-        {state.description && (
-          <p className="mt-4 max-w-3xl text-slate-600">{state.description}</p>
-        )}
       </div>
 
       {/* Calculator */}

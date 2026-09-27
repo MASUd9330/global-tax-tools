@@ -6,7 +6,6 @@ import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/coun
 import { listStatesForCountry } from "@/lib/data/state";
 import { TaxCalculator } from "@/components/TaxCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { JsonLd, breadcrumbLd, softwareApplicationLd } from "@/components/JsonLd";
 
@@ -62,22 +61,48 @@ export default async function CountryHubPage({ params }: PageProps) {
       </nav>
 
       {/* Hero */}
-      <div>
-        <div className="flex items-center gap-3">
-          <span className="text-4xl">{country.flagEmoji}</span>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">{country.name} Tax Calculator</h1>
-            <div className="mt-1 flex flex-wrap gap-2 text-xs">
-              <Badge>{country.region}</Badge>
-              <Badge>{country.defaultCurrency}</Badge>
-              <Badge>{country.taxSystem} tax</Badge>
-              <Badge>{year} brackets</Badge>
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-white p-6 md:p-8">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-blue-100/40 blur-3xl" />
+        <div className="relative">
+          <div className="flex items-start gap-4">
+            <span className="text-5xl leading-none">{country.flagEmoji}</span>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-slate-900">{country.name} Tax Calculator</h1>
+              <p className="mt-1 text-sm text-slate-600">
+                {country.region} · {country.taxSystem} tax system · {country.defaultCurrency}
+              </p>
+              {country.description && (
+                <p className="mt-3 max-w-3xl text-slate-700 leading-relaxed">{country.description}</p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-blue-700 font-medium">
+                  {year} brackets
+                </span>
+                {country.taxSystem === "none" && (
+                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-emerald-700 font-medium">
+                    ✓ No personal income tax
+                  </span>
+                )}
+                {taxData?.sourceUrl && (
+                  <a
+                    href={taxData.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-slate-700 font-medium hover:bg-slate-200"
+                  >
+                    Official source ↗
+                  </a>
+                )}
+                <Link
+                  href={`/embed/${country.code}?income=75000`}
+                  className="inline-flex items-center rounded-md bg-blue-600 px-2.5 py-1 text-white font-medium hover:bg-blue-700"
+                >
+                  Embed widget
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-        {country.description && (
-          <p className="mt-4 max-w-3xl text-slate-600">{country.description}</p>
-        )}
       </div>
 
       {/* Calculator */}
