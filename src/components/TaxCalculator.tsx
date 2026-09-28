@@ -7,9 +7,30 @@ import { Input, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelector } from "@/components/CountrySelector";
 import { StateSelector } from "@/components/StateSelector";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import { AiExplainer } from "@/components/AiExplainer";
 import { BracketVisualization } from "@/components/BracketVisualization";
+import { TaxFreedomDay } from "@/components/TaxFreedomDay";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
+import { convertCurrency, formatMoney, parseAmount, CURRENCIES } from "@/lib/currency";
+
+// Quick lookup of country → currency code.
+// Avoids API call before submit. Falls back to USD.
+// (Country list must mirror /api/countries output.)
+const COUNTRY_CURRENCY: Record<string, string> = {
+  US: "USD", UK: "GBP", DE: "EUR", FR: "EUR", CA: "CAD", IT: "EUR", ES: "EUR",
+  NL: "EUR", IE: "EUR", AU: "AUD", JP: "JPY", IN: "INR", SG: "SGD", AE: "AED",
+  HK: "HKD", KR: "KRW", CN: "CNY", TW: "TWD", MY: "MYR", TH: "THB", PH: "PHP",
+  VN: "VND", ID: "IDR", SA: "SAR", IL: "ILS", PL: "PLN", FI: "EUR", AT: "EUR",
+  BE: "EUR", CZ: "CZK", GR: "EUR", HU: "HUF", RU: "RUB", AR: "ARS", CL: "CLP",
+  CO: "COP", PE: "PEN", ZA: "ZAR", BR: "BRL", MX: "MXN", PT: "EUR", CH: "CHF",
+  SE: "SEK", NO: "NOK", DK: "DKK", NZ: "NZD",
+};
+
+function getCountryCurrency(country: string, state?: string): string {
+  if (country === "US") return "USD"; // US has state tax but same currency
+  return COUNTRY_CURRENCY[country] ?? "USD";
+}
 
 interface TaxBreakdownItem {
   lower: number;
@@ -61,6 +82,7 @@ interface Props {
 export function TaxCalculator({ initialCountry = "US", initialState = "CA", initialIncome = 75000 }: Props) {
   const [country, setCountry] = useState(initialCountry);
   const [state, setState] = useState(initialState);
+  const [currency, setCurrency] = useState("USD"); // user's chosen display currency
   const [income, setIncome] = useState(initialIncome.toString());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,16 +93,22 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
     if (country !== "US") setState("");
   }, [country]);
 
-  const incomeNum = useMemo(() => {
-    const n = parseFloat(income);
-    return isFinite(n) && n >= 0 ? n : 0;
-  }, [income]);
+  const incomeNum = useMemo(() => parseAmount(income), [income]);
 
   const calculate = async () => {
     setLoading(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = { country, income: incomeNum };
+      // Convert user's input currency → country currency before calling API.
+      // We need the country's default currency to know what to send.
+      // Most countries use their defaultCurrency (USD for US, GBP for UK, etc.).
+      // For countries using same ISO code as currency (most), we look up via /api/countries.
+      const countryCurrency = await getCountryCurrency(country, state);
+      const incomeInCountryCurrency = convertCurrency(incomeNum, currency, countryCurrency);
+      const body: Record<string, unknown> = {
+        country,
+        income: incomeInCountryCurrency,
+      };
       if (state && country === "US") body.state = state;
       const res = await fetch("/api/calculate/tax", {
         method: "POST",
@@ -100,7 +128,11 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
     }
   };
 
-  const currency = data?.meta.currency ?? "USD";
+  const displayCurrency = currency; // user's chosen currency
+  const resultCurrency = data?.meta.currency ?? "USD";
+
+  // Helper: convert result (in country currency) to display currency
+  const d = (n: number) => convertCurrency(n, resultCurrency, displayCurrency);
 
   return (
     <div className="space-y-6">
@@ -109,7 +141,7 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
           <CardTitle>Income Tax Calculator</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div>
               <Label htmlFor="country">Country</Label>
               <CountrySelector value={country} onChange={setCountry} className="mt-1.5" />
@@ -130,6 +162,10 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
                 placeholder="75000"
                 className="mt-1.5"
               />
+            </div>
+            <div>
+              <Label htmlFor="currency">Currency</Label>
+              <CurrencySelector value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between">
@@ -167,20 +203,23 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
                   <span className="text-slate-500">/ {data.input.state.name}</span>
                 )}
                 <span className="text-sm font-normal text-slate-500">— {data.input.year}</span>
+                <span className="ml-auto text-xs text-slate-400">
+                  Showing in {displayCurrency} (calc in {resultCurrency})
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-4">
-                <Stat label="Gross Income" value={formatCurrency(data.result.grossIncome, currency)} />
-                <Stat label="Total Tax" value={formatCurrency(data.result.totalTax, currency)} accent />
-                <Stat label="Net Income" value={formatCurrency(data.result.netIncome, currency)} highlight />
+                <Stat label="Gross Income" value={formatCurrency(d(data.result.grossIncome), displayCurrency)} />
+                <Stat label="Total Tax" value={formatCurrency(d(data.result.totalTax), displayCurrency)} accent />
+                <Stat label="Net Income" value={formatCurrency(d(data.result.netIncome), displayCurrency)} highlight />
                 <Stat label="Effective Rate" value={formatPercent(data.result.effectiveRate, 2)} />
               </div>
               {data.result.state && data.input.state && (
                 <div className="mt-4 border-t border-slate-100 pt-4">
                   <div className="grid gap-4 md:grid-cols-3">
-                    <Stat label="Federal Tax" value={formatCurrency(data.result.federal.totalTax, currency)} />
-                    <Stat label={`${data.input.state.name} Tax`} value={formatCurrency(data.result.state.totalTax, currency)} />
+                    <Stat label="Federal Tax" value={formatCurrency(d(data.result.federal.totalTax), displayCurrency)} />
+                    <Stat label={`${data.input.state.name} Tax`} value={formatCurrency(d(data.result.state.totalTax), displayCurrency)} />
                     <Stat label="Combined Effective" value={formatPercent(data.result.effectiveRate, 2)} />
                   </div>
                 </div>
@@ -190,9 +229,17 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
 
           {/* Visual bracket breakdown */}
           <BracketVisualization
-            income={data.result.grossIncome}
-            currency={currency}
+            income={d(data.result.grossIncome)}
+            currency={displayCurrency}
             breakdown={data.result.federal.breakdown}
+          />
+
+          {/* Tax Freedom Day */}
+          <TaxFreedomDay
+            income={d(data.result.grossIncome)}
+            totalTax={d(data.result.totalTax)}
+            displayCurrency={displayCurrency}
+            year={data.input.year}
           />
 
           {/* Federal breakdown */}
@@ -206,7 +253,12 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <BracketTable breakdown={data.result.federal.breakdown} deductions={data.result.federal.deductionsApplied} currency={currency} />
+              <BracketTable
+                breakdown={data.result.federal.breakdown}
+                deductions={data.result.federal.deductionsApplied}
+                currency={resultCurrency}
+                displayCurrency={displayCurrency}
+              />
             </CardContent>
           </Card>
 
@@ -222,7 +274,12 @@ export function TaxCalculator({ initialCountry = "US", initialState = "CA", init
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <BracketTable breakdown={data.result.state.breakdown} deductions={data.result.state.deductionsApplied} currency={currency} />
+                <BracketTable
+                  breakdown={data.result.state.breakdown}
+                  deductions={data.result.state.deductionsApplied}
+                  currency={resultCurrency}
+                  displayCurrency={displayCurrency}
+                />
               </CardContent>
             </Card>
           )}
@@ -262,11 +319,16 @@ function BracketTable({
   breakdown,
   deductions,
   currency,
+  displayCurrency,
 }: {
   breakdown: TaxBreakdownItem[];
   deductions: Array<{ name: string; amount: number }>;
   currency: string;
+  displayCurrency?: string;
 }) {
+  const dc = displayCurrency ?? currency;
+  const toDisplay = (n: number) =>
+    displayCurrency ? convertCurrency(n, currency, displayCurrency) : n;
   return (
     <>
       {deductions.length > 0 && (
@@ -274,7 +336,7 @@ function BracketTable({
           {deductions.map((d, i) => (
             <li key={i} className="flex justify-between py-1.5 text-sm">
               <span className="text-slate-600">{d.name}</span>
-              <span className="font-medium text-slate-700">− {formatCurrency(d.amount, currency)}</span>
+              <span className="font-medium text-slate-700">− {formatCurrency(toDisplay(d.amount), dc)}</span>
             </li>
           ))}
         </ul>
@@ -293,12 +355,12 @@ function BracketTable({
             {breakdown.map((b, i) => (
               <tr key={i} className="border-b border-slate-100">
                 <td className="py-2">
-                  {formatCurrency(b.lower, currency)} – {b.upper === null ? "∞" : formatCurrency(b.upper, currency)}
+                  {formatCurrency(toDisplay(b.lower), dc)} – {b.upper === null ? "∞" : formatCurrency(toDisplay(b.upper), dc)}
                 </td>
                 <td className="py-2">{formatPercent(b.rate, 0)}</td>
-                <td className="py-2 text-right tabular-nums">{formatNumber(b.amountInBracket)}</td>
+                <td className="py-2 text-right tabular-nums">{formatNumber(toDisplay(b.amountInBracket))}</td>
                 <td className="py-2 text-right font-medium tabular-nums">
-                  {formatCurrency(b.taxInBracket, currency)}
+                  {formatCurrency(toDisplay(b.taxInBracket), dc)}
                 </td>
               </tr>
             ))}
