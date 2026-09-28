@@ -1,0 +1,107 @@
+name: Source Monitor
+
+# Runs daily at 06:00 UTC. Hits the source monitor endpoint, captures the
+# results, and commits them to data/monitor-results.json so we have persistent
+# change detection across deploys.
+#
+# Free tier: GitHub Actions gives 2,000 minutes/month for free repos.
+# This workflow uses ~1 min/day = ~30 min/month, well under limits.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      priority:
+        description: "Source priority tier (1=G7, 2=expat, 3=long-tail)"
+        required: false
+        default: "1"
+      site_url:
+        description: "Override site URL"
+        required: false
+        default: ""
+
+jobs:
+  check-sources:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve site URL
+        id: site
+        env:
+          OVERRIDE: ${{ inputs.site_url }}
+          VAR: ${{ vars.SITE_URL }}
+        run: |
+          if [ -n "$OVERRIDE" ]; then
+            echo "url=$OVERRIDE" >> $GITHUB_OUTPUT
+          elif [ -n "$VAR" ]; then
+            echo "url=$VAR" >> $GITHUB_OUTPUT
+          else
+            echo "url=https://global-tax-tools.vercel.app" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run source monitor against deployed site
+        id: monitor
+        env:
+          SITE_URL: ${{ steps.site.outputs.url }}
+          PRIORITY: ${{ inputs.priority || '1' }}
+        run: |
+          echo "Fetching monitor results (priority=$PRIORITY) from $SITE_URL"
+          curl -sS -m 90 "$SITE_URL/api/monitor?priority=$PRIORITY" \
+            -H "Accept: application/json" \
+            -o monitor-result.json
+
+          if ! jq -e . monitor-result.json > /dev/null 2>&1; then
+            echo "ERROR: invalid JSON response"
+            cat monitor-result.json | head -20
+            exit 1
+          fi
+
+          TOTAL=$(jq '.results | length' monitor-result.json)
+          CHANGED=$(jq '[.results[] | select(.verdict=="changed")] | length' monitor-result.json)
+          ERRORS=$(jq '[.results[] | select(.verdict=="error" or .verdict=="timeout")] | length' monitor-result.json)
+          echo "Total=$TOTAL Changed=$CHANGED Errors=$ERRORS"
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+
+      - name: Update results history
+        run: |
+          mkdir -p data
+          if [ -f data/monitor-results.json ]; then
+            jq -s '.[0] as $prev | .[1] as $curr |
+              ($prev.history // []) as $h |
+              { history: (($h + [$curr]) | .[-30:]), lastRun: $curr, lastUpdated: $curr.ranAt }
+            ' data/monitor-results.json monitor-result.json > data/monitor-results.json.new
+          else
+            jq '{ history: [inputs], lastRun: inputs, lastUpdated: inputs.ranAt }' \
+              monitor-result.json > data/monitor-results.json
+          fi
+          mv data/monitor-results.json.new data/monitor-results.json
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/monitor-results.json
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            CHANGED=${{ steps.monitor.outputs.changed }}
+            ERRORS=${{ steps.monitor.outputs.errors }}
+            TOTAL=${{ steps.monitor.outputs.total }}
+            git commit -m "chore(monitor): source check - ${CHANGED} changed, ${ERRORS} errors of ${TOTAL} [skip ci]"
+            git push
+          fi
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitor-results-${{ github.run_id }}
+          path: monitor-result.json
+          retention-days: 7

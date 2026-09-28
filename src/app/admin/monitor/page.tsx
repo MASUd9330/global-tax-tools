@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MONITORED_SOURCES } from "@/lib/monitor/sources";
+import { readMonitorHistory } from "@/lib/monitor/history";
 
 export const metadata = {
   title: "Source Monitor — TaxRank Admin",
@@ -8,12 +9,13 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function MonitorPage() {
+export default async function MonitorPage() {
   const countries = MONITORED_SOURCES.filter((s) => s.category === "country");
   const states = MONITORED_SOURCES.filter((s) => s.category === "state");
   const g7 = countries.filter((s) => s.priority === 1);
   const tier2 = countries.filter((s) => s.priority === 2);
   const tier3 = countries.filter((s) => s.priority === 3);
+  const history = await readMonitorHistory();
 
   return (
     <div className="space-y-8">
@@ -77,6 +79,71 @@ export default function MonitorPage() {
         </CardContent>
       </Card>
 
+      {/* Recent run history (populated by GitHub Actions workflow) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Recent run history</span>
+            {history.lastUpdated && (
+              <span className="text-xs font-normal text-slate-500">
+                Last updated: {new Date(history.lastUpdated).toLocaleString()}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {history.history.length === 0 ? (
+            <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+              No runs yet. The GitHub Actions workflow{" "}
+              <code className="bg-white px-1 rounded text-xs">.github/workflows/monitor.yml</code> runs
+              daily at 06:00 UTC and commits results to <code className="bg-white px-1 rounded text-xs">data/monitor-results.json</code>.
+              You can also trigger it manually from the Actions tab → "Run workflow".
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.history.slice().reverse().slice(0, 10).map((run, i) => {
+                const changed = run.summary.byVerdict.changed;
+                const errors = run.summary.byVerdict.error + run.summary.byVerdict.timeout;
+                return (
+                  <div key={i} className="border border-slate-200 rounded p-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-900">
+                        {new Date(run.ranAt).toLocaleString()}
+                      </span>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-slate-500">{run.summary.total} checked</span>
+                        {changed > 0 && (
+                          <span className="rounded bg-amber-50 px-2 py-0.5 text-amber-700 font-medium">
+                            {changed} changed
+                          </span>
+                        )}
+                        {errors > 0 && (
+                          <span className="rounded bg-rose-50 px-2 py-0.5 text-rose-700 font-medium">
+                            {errors} errors
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {run.results.filter((r) => r.verdict === "changed").length > 0 && (
+                      <ul className="mt-2 text-xs space-y-1">
+                        {run.results.filter((r) => r.verdict === "changed").map((r) => (
+                          <li key={r.id} className="text-slate-700">
+                            <strong>{r.jurisdiction}</strong> —{" "}
+                            <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                              {r.sourceUrl}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>How to use</CardTitle>
@@ -96,15 +163,16 @@ export default function MonitorPage() {
             <code className="bg-slate-100 px-1 rounded text-xs">/api/monitor?category=state</code> — only US states.
           </p>
           <p>
+            <strong>Automated daily check:</strong> The GitHub Actions workflow runs at 06:00 UTC and
+            writes results to <code className="bg-slate-100 px-1 rounded text-xs">data/monitor-results.json</code>.
+            No PC required — runs on GitHub's servers (free, ~30 min/month of GitHub Actions quota).
+          </p>
+          <p>
             <strong>Verdicts:</strong>{" "}
             <span className="text-emerald-700">ok</span> = hash matches last-seen ·{" "}
             <span className="text-amber-700">changed</span> = hash differs ·{" "}
             <span className="text-rose-700">error</span> = non-2xx or network failure ·{" "}
             <span className="text-slate-700">timeout</span> = exceeded 8s.
-          </p>
-          <p className="pt-2 text-xs text-slate-500">
-            Limitation: Vercel serverless memory is ephemeral across deploys, so the last-seen cache resets.
-            For continuous change detection, deploy with Vercel KV or wire to an external uptime monitor.
           </p>
         </CardContent>
       </Card>

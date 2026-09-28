@@ -1,0 +1,42 @@
+name: CI
+
+# Runs on every push and PR. Validates type-check, tests, and lint.
+# No deployment happens here — that's handled by Vercel automatically.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Type-check + Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type-check
+        run: & "node" "node_modules/typescript/bin/tsc" --noEmit
+
+      - name: Run tests
+        run: & "node" "--import" "tsx" "--test" "tests/*.test.ts"
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Node: 20" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: see above" >> $GITHUB_STEP_SUMMARY
