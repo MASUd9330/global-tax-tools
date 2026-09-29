@@ -25,13 +25,20 @@ export function StateSelector({ countryCode, value, onChange, className }: State
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
+  const isProvince = countryCode === "CA";
+  const label = isProvince ? "province" : "state";
+
   useEffect(() => {
-    if (!countryCode) return;
+    if (!countryCode || (countryCode !== "US" && countryCode !== "CA")) {
+      setStates([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     fetch(`/api/states?country=${countryCode}`)
       .then((r) => r.json())
       .then((d) => {
-        setStates(d.states ?? []);
+        setStates(d.states ?? d.provinces ?? []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -39,8 +46,8 @@ export function StateSelector({ countryCode, value, onChange, className }: State
 
   const selected = states.find((s) => s.code === value);
 
-  // Don't render for non-US countries (or countries with no states)
-  if (countryCode !== "US" && states.length === 0) {
+  // Don't render for countries with no states/provinces
+  if (countryCode !== "US" && countryCode !== "CA") {
     return null;
   }
 
@@ -54,7 +61,7 @@ export function StateSelector({ countryCode, value, onChange, className }: State
       >
         <span className="flex items-center gap-2">
           {loading ? (
-            "Loading states…"
+            `Loading ${label}s…`
           ) : selected ? (
             <>
               <span className="font-medium">{selected.name}</span>
@@ -65,7 +72,7 @@ export function StateSelector({ countryCode, value, onChange, className }: State
               )}
             </>
           ) : (
-            <span className="text-slate-500">Select state (optional)</span>
+            <span className="text-slate-500">Select {label} (optional)</span>
           )}
         </span>
         <ChevronDown className="h-4 w-4 text-slate-500" />
@@ -81,7 +88,7 @@ export function StateSelector({ countryCode, value, onChange, className }: State
               }}
               className="cursor-pointer px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 italic"
             >
-              — No state / federal only —
+              — No {label} / federal only —
             </li>
             {states.map((s) => (
               <li

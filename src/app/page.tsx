@@ -92,6 +92,8 @@ function CountryCard({ c }: { c: Awaited<ReturnType<typeof listCountries>>[numbe
 export default async function HomePage() {
   const countries = await listCountries();
   const usStates = await listStatesForCountry("US");
+  const { listProvinces } = await import("@/lib/data/province");
+  const caProvinces = listProvinces();
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const noTaxCountries = countries.filter((c) => c.taxSystem === "none");
 
@@ -281,6 +283,41 @@ export default async function HomePage() {
                     <div className="text-[10px] text-slate-500 truncate">{s.name}</div>
                     {!s.hasIncomeTax && (
                       <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500" title="No state income tax" />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Canadian Provinces mega card */}
+        <div className="mt-4">
+          <Card className="overflow-hidden border-red-200">
+            <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-base">
+                  <span className="text-2xl">🇨🇦</span>
+                  <span className="font-semibold">Canada</span>
+                  <Badge className="bg-red-100 text-red-800">{caProvinces.length} provinces</Badge>
+                </span>
+                <Link href="/countries/canada/" className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
+                  Full Canada calculator <ArrowRight className="h-3 w-3" />
+                </Link>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-1.5">
+                {caProvinces.map((p) => (
+                  <Link
+                    key={p.code}
+                    href={`/canada/${p.slug}`}
+                    className="group/state relative rounded-md border border-slate-200 px-2 py-1.5 text-center text-xs transition-all hover:border-red-400 hover:bg-red-50"
+                  >
+                    <div className="font-semibold text-slate-900">{p.code}</div>
+                    <div className="text-[10px] text-slate-500 truncate">{p.name}</div>
+                    {p.topMarginalRate !== null && (
+                      <div className="text-[9px] text-slate-400">top {(p.topMarginalRate * 100).toFixed(1)}%</div>
                     )}
                   </Link>
                 ))}

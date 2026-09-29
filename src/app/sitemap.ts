@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { listCountries } from "@/lib/data/country";
 import { listStatesForCountry } from "@/lib/data/state";
+import { listProvinces } from "@/lib/data/province";
 
 // Static list of curated comparison pairs (avoids DB query at request time)
 const POPULAR_COMPARISONS = [
@@ -21,6 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const countries = await listCountries();
   const usStates = await listStatesForCountry("US");
+  const caProvinces = listProvinces();
   const now = new Date();
 
   return [
@@ -47,6 +49,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...usStates.map((s) => ({
       url: `${BASE}/us-state/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+    ...caProvinces.map((p) => ({
+      url: `${BASE}/canada/${p.slug}`,
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.6,

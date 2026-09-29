@@ -6,6 +6,7 @@ import { z } from "zod";
 import { calculateProgressiveTax } from "@/lib/calc/tax";
 import { getCountry, getCountryTaxData, getLatestTaxYear } from "@/lib/data/country";
 import { getStateTaxData } from "@/lib/data/state";
+import { getProvinceTaxData } from "@/lib/data/province";
 import { withRateLimit } from "@/lib/api/with-rate-limit";
 
 const BodySchema = z.object({
@@ -89,23 +90,53 @@ export const POST = withRateLimit(async (req: NextRequest) => {
     metaLastUpdated = data.lastUpdated;
   }
 
-  // State tax (optional, country must match state country)
+  // Sub-national tax: US states or Canadian provinces
   let stateResult: ReturnType<typeof calculateProgressiveTax> | null = null;
   let stateInfo: Awaited<ReturnType<typeof getStateTaxData>> | null = null;
+  let provinceInfo: Awaited<ReturnType<typeof getProvinceTaxData>> | null = null;
   if (state) {
-    stateInfo = await getStateTaxData(country, state);
-    if (!stateInfo) {
-      return NextResponse.json(
-        { error: `No state data for ${state} in ${country}` },
-        { status: 404 }
-      );
-    }
-    if (stateInfo.state.hasIncomeTax) {
-      const stateDeductions: { name: string; type: string; amount: number }[] = stateInfo.standardDeduction > 0
-        ? [{ name: `${stateInfo.state.name} Standard Deduction`, type: "standard", amount: stateInfo.standardDeduction }]
-        : [];
-      // State brackets already in lowerBound/upperBound format
-      stateResult = calculateProgressiveTax(income, stateInfo.brackets, stateDeductions);
+    if (country === "CA") {
+      // Canadian province
+      provinceInfo = await getProvinceTaxData(state);
+      if (!provinceInfo) {
+        return NextResponse.json(
+          { error: `No province data for ${state} in ${country}` },
+          { status: 404 }
+        );
+      }
+      if (provinceInfo.province.hasIncomeTax) {
+        // Provincial brackets stack on federal — compute provincial portion only,
+        // federal deduction is already applied in federalResult.
+        stateResult = calculateProgressiveTax(
+          income,
+          provinceInfo.brackets,
+          provinceInfo.deductions
+        );
+        // Quebec abatement: Quebec residents get 16.5% of federal tax back (since
+        // Quebec administers its own pension via QPP/RQAP separately).
+        if (provinceInfo.hasQuebecAbatement) {
+          const abatement = federalResult.totalTax * 0.165;
+          // Abatement reduces effective tax (subtract from provincial — but we return
+          // it in the response for transparency).
+          (stateResult as any).quebecAbatement = abatement;
+        }
+      }
+    } else {
+      // US state (default path)
+      stateInfo = await getStateTaxData(country, state);
+      if (!stateInfo) {
+        return NextResponse.json(
+          { error: `No state data for ${state} in ${country}` },
+          { status: 404 }
+        );
+      }
+      if (stateInfo.state.hasIncomeTax) {
+        const stateDeductions: { name: string; type: string; amount: number }[] = stateInfo.standardDeduction > 0
+          ? [{ name: `${stateInfo.state.name} Standard Deduction`, type: "standard", amount: stateInfo.standardDeduction }]
+          : [];
+        // State brackets already in lowerBound/upperBound format
+        stateResult = calculateProgressiveTax(income, stateInfo.brackets, stateDeductions);
+      }
     }
   }
 
@@ -114,22 +145,38 @@ export const POST = withRateLimit(async (req: NextRequest) => {
   const combinedTotalTax = federalResult.totalTax + stateTaxTotal;
   const combinedEffectiveRate = income > 0 ? combinedTotalTax / income : 0;
 
+  // Quebec abatement: subtract from federal tax (Quebec administers its own pension)
+  const quebecAbatement = (stateResult as any)?.quebecAbatement ?? 0;
+  const adjustedFederalTotal = country === "CA" && quebecAbatement > 0
+    ? Math.max(0, federalResult.totalTax - quebecAbatement)
+    : federalResult.totalTax;
+
   return NextResponse.json({
-    input: { country: countryInfo, state: stateInfo?.state ?? null, year, taxType, income },
+    input: {
+      country: countryInfo,
+      state: stateInfo?.state ?? null,
+      province: provinceInfo?.province ?? null,
+      year, taxType, income,
+    },
     meta: {
       sourceUrl: metaSourceUrl,
       stateSourceUrl: stateInfo?.sourceUrl ?? null,
+      provinceSourceUrl: provinceInfo?.sourceUrl ?? null,
       notes: metaNotes,
       lastUpdated: metaLastUpdated,
       currency: countryInfo.defaultCurrency,
+      quebecAbatement: quebecAbatement > 0 ? quebecAbatement : undefined,
     },
     result: {
-      federal: federalResult,
+      federal: country === "CA" && quebecAbatement > 0
+        ? { ...federalResult, totalTax: adjustedFederalTotal }
+        : federalResult,
       state: stateResult,
+      province: provinceInfo?.province ?? null,
       grossIncome: income,
-      totalTax: combinedTotalTax,
-      effectiveRate: combinedEffectiveRate,
-      netIncome: income - combinedTotalTax,
+      totalTax: adjustedFederalTotal + stateTaxTotal,
+      effectiveRate: income > 0 ? (adjustedFederalTotal + stateTaxTotal) / income : 0,
+      netIncome: income - (adjustedFederalTotal + stateTaxTotal),
     },
   });
 });
