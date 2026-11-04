@@ -1,140 +1,6 @@
 {
   "history": [
     {
-      "ranAt": "2026-10-05T13:25:58.239Z",
-      "sourcesTracked": 75,
-      "summary": {
-        "total": 7,
-        "byVerdict": {
-          "ok": 7,
-          "changed": 0,
-          "error": 0,
-          "timeout": 0
-        }
-      },
-      "results": [
-        {
-          "id": "country-US",
-          "jurisdiction": "United States",
-          "jurisdictionCode": "US",
-          "sourceUrl": "https://www.irs.gov/filing/federal-income-tax-rates-and-brackets",
-          "organization": "IRS",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 106908,
-          "contentHash": "c59edb392c517f93",
-          "contentType": "text/html; charset=UTF-8",
-          "fetchedAtMs": 1791206757543,
-          "durationMs": 677,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-UK",
-          "jurisdiction": "United Kingdom",
-          "jurisdictionCode": "UK",
-          "sourceUrl": "https://www.gov.uk/income-tax-rates",
-          "organization": "HMRC",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 87988,
-          "contentHash": "d69e758e5e23ca5e",
-          "contentType": "text/html; charset=utf-8",
-          "fetchedAtMs": 1791206757390,
-          "durationMs": 522,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-DE",
-          "jurisdiction": "Germany",
-          "jurisdictionCode": "DE",
-          "sourceUrl": "https://www.bmf-steuerrechner.de/",
-          "organization": "BMF",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 35101,
-          "contentHash": "feb3d040e22f1b2f",
-          "contentType": "text/html;charset=UTF-8",
-          "fetchedAtMs": 1791206758008,
-          "durationMs": 1139,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-FR",
-          "jurisdiction": "France",
-          "jurisdictionCode": "FR",
-          "sourceUrl": "https://www.impots.gouv.fr",
-          "organization": "DGFiP",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 297282,
-          "contentHash": "7e4382960efcb4f4",
-          "contentType": "text/html; charset=UTF-8",
-          "fetchedAtMs": 1791206758055,
-          "durationMs": 1186,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-CA",
-          "jurisdiction": "Canada",
-          "jurisdictionCode": "CA",
-          "sourceUrl": "https://www.canada.ca/en/revenue-agency.html",
-          "organization": "CRA",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 47648,
-          "contentHash": "84596f44b0231ac8",
-          "contentType": "text/html;charset=utf-8",
-          "fetchedAtMs": 1791206758239,
-          "durationMs": 1370,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-IT",
-          "jurisdiction": "Italy",
-          "jurisdictionCode": "IT",
-          "sourceUrl": "https://www.agenziaentrate.gov.it",
-          "organization": "Agenzia delle Entrate",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 81715,
-          "contentHash": "6318fb4adc9e1bca",
-          "contentType": "text/html;charset=UTF-8",
-          "fetchedAtMs": 1791206758006,
-          "durationMs": 1137,
-          "verdict": "ok"
-        },
-        {
-          "id": "country-JP",
-          "jurisdiction": "Japan",
-          "jurisdictionCode": "JP",
-          "sourceUrl": "https://www.nta.go.jp/english/taxes/individual/index.htm",
-          "organization": "NTA",
-          "category": "country",
-          "priority": 1,
-          "yearCovered": 2025,
-          "httpStatus": 200,
-          "contentLength": 6543,
-          "contentHash": "d9a265142a6d5d8e",
-          "contentType": "text/html",
-          "fetchedAtMs": 1791206757388,
-          "durationMs": 518,
-          "verdict": "ok"
-        }
-      ]
-    },
-    {
       "ranAt": "2026-10-06T12:39:11.919Z",
       "sourcesTracked": 75,
       "summary": {
@@ -4019,10 +3885,144 @@
           "verdict": "ok"
         }
       ]
+    },
+    {
+      "ranAt": "2026-11-04T13:41:38.198Z",
+      "sourcesTracked": 75,
+      "summary": {
+        "total": 7,
+        "byVerdict": {
+          "ok": 7,
+          "changed": 0,
+          "error": 0,
+          "timeout": 0
+        }
+      },
+      "results": [
+        {
+          "id": "country-US",
+          "jurisdiction": "United States",
+          "jurisdictionCode": "US",
+          "sourceUrl": "https://www.irs.gov/filing/federal-income-tax-rates-and-brackets",
+          "organization": "IRS",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 107941,
+          "contentHash": "98be9ad798240f39",
+          "contentType": "text/html; charset=UTF-8",
+          "fetchedAtMs": 1793799698162,
+          "durationMs": 172,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-UK",
+          "jurisdiction": "United Kingdom",
+          "jurisdictionCode": "UK",
+          "sourceUrl": "https://www.gov.uk/income-tax-rates",
+          "organization": "HMRC",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 87997,
+          "contentHash": "34692b09d9d09b84",
+          "contentType": "text/html; charset=utf-8",
+          "fetchedAtMs": 1793799698158,
+          "durationMs": 166,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-DE",
+          "jurisdiction": "Germany",
+          "jurisdictionCode": "DE",
+          "sourceUrl": "https://www.bmf-steuerrechner.de/",
+          "organization": "BMF",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 35101,
+          "contentHash": "259481396f697dab",
+          "contentType": "text/html;charset=UTF-8",
+          "fetchedAtMs": 1793799698113,
+          "durationMs": 121,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-FR",
+          "jurisdiction": "France",
+          "jurisdictionCode": "FR",
+          "sourceUrl": "https://www.impots.gouv.fr",
+          "organization": "DGFiP",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 300765,
+          "contentHash": "2262e35a7d150946",
+          "contentType": "text/html; charset=UTF-8",
+          "fetchedAtMs": 1793799698198,
+          "durationMs": 206,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-CA",
+          "jurisdiction": "Canada",
+          "jurisdictionCode": "CA",
+          "sourceUrl": "https://www.canada.ca/en/revenue-agency.html",
+          "organization": "CRA",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 47648,
+          "contentHash": "1a229d746fcf4fd9",
+          "contentType": "text/html;charset=utf-8",
+          "fetchedAtMs": 1793799698116,
+          "durationMs": 124,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-IT",
+          "jurisdiction": "Italy",
+          "jurisdictionCode": "IT",
+          "sourceUrl": "https://www.agenziaentrate.gov.it",
+          "organization": "Agenzia delle Entrate",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 81697,
+          "contentHash": "0f3ff9a5470563a5",
+          "contentType": "text/html;charset=UTF-8",
+          "fetchedAtMs": 1793799698155,
+          "durationMs": 162,
+          "verdict": "ok"
+        },
+        {
+          "id": "country-JP",
+          "jurisdiction": "Japan",
+          "jurisdictionCode": "JP",
+          "sourceUrl": "https://www.nta.go.jp/english/taxes/individual/index.htm",
+          "organization": "NTA",
+          "category": "country",
+          "priority": 1,
+          "yearCovered": 2025,
+          "httpStatus": 200,
+          "contentLength": 6543,
+          "contentHash": "d9a265142a6d5d8e",
+          "contentType": "text/html",
+          "fetchedAtMs": 1793799698100,
+          "durationMs": 107,
+          "verdict": "ok"
+        }
+      ]
     }
   ],
   "lastRun": {
-    "ranAt": "2026-11-03T13:30:40.100Z",
+    "ranAt": "2026-11-04T13:41:38.198Z",
     "sourcesTracked": 75,
     "summary": {
       "total": 7,
@@ -4047,8 +4047,8 @@
         "contentLength": 107941,
         "contentHash": "98be9ad798240f39",
         "contentType": "text/html; charset=UTF-8",
-        "fetchedAtMs": 1793712640054,
-        "durationMs": 158,
+        "fetchedAtMs": 1793799698162,
+        "durationMs": 172,
         "verdict": "ok"
       },
       {
@@ -4064,8 +4064,8 @@
         "contentLength": 87997,
         "contentHash": "34692b09d9d09b84",
         "contentType": "text/html; charset=utf-8",
-        "fetchedAtMs": 1793712640042,
-        "durationMs": 143,
+        "fetchedAtMs": 1793799698158,
+        "durationMs": 166,
         "verdict": "ok"
       },
       {
@@ -4081,8 +4081,8 @@
         "contentLength": 35101,
         "contentHash": "259481396f697dab",
         "contentType": "text/html;charset=UTF-8",
-        "fetchedAtMs": 1793712640016,
-        "durationMs": 117,
+        "fetchedAtMs": 1793799698113,
+        "durationMs": 121,
         "verdict": "ok"
       },
       {
@@ -4098,8 +4098,8 @@
         "contentLength": 300765,
         "contentHash": "2262e35a7d150946",
         "contentType": "text/html; charset=UTF-8",
-        "fetchedAtMs": 1793712640100,
-        "durationMs": 201,
+        "fetchedAtMs": 1793799698198,
+        "durationMs": 206,
         "verdict": "ok"
       },
       {
@@ -4115,8 +4115,8 @@
         "contentLength": 47648,
         "contentHash": "1a229d746fcf4fd9",
         "contentType": "text/html;charset=utf-8",
-        "fetchedAtMs": 1793712640035,
-        "durationMs": 136,
+        "fetchedAtMs": 1793799698116,
+        "durationMs": 124,
         "verdict": "ok"
       },
       {
@@ -4132,8 +4132,8 @@
         "contentLength": 81697,
         "contentHash": "0f3ff9a5470563a5",
         "contentType": "text/html;charset=UTF-8",
-        "fetchedAtMs": 1793712640039,
-        "durationMs": 139,
+        "fetchedAtMs": 1793799698155,
+        "durationMs": 162,
         "verdict": "ok"
       },
       {
@@ -4149,11 +4149,11 @@
         "contentLength": 6543,
         "contentHash": "d9a265142a6d5d8e",
         "contentType": "text/html",
-        "fetchedAtMs": 1793712640004,
-        "durationMs": 104,
+        "fetchedAtMs": 1793799698100,
+        "durationMs": 107,
         "verdict": "ok"
       }
     ]
   },
-  "lastUpdated": "2026-11-03T13:30:40.100Z"
+  "lastUpdated": "2026-11-04T13:41:38.198Z"
 }
